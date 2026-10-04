@@ -79,14 +79,14 @@ $config = [
     'empresa_nombre'   => get_config($db, 'empresa_nombre', 'Power Pack'),
     'empresa_nit'      => get_config($db, 'empresa_nit', '901.452.889-1'),
     'empresa_telefono' => get_config($db, 'empresa_telefono', '+57 300 467 0474'),
-    'empresa_email'    => get_config($db, 'empresa_email', 'ventas@powerpack.com.co'),
+    'empresa_email'    => get_config($db, 'empresa_email', 'administrador@powerpack.site'),
     'empresa_direccion'=> get_config($db, 'empresa_direccion', 'Calle 161 # 54 - 25, Bogotá, Colombia'),
     'smtp_host'        => get_config($db, 'smtp_host', 'smtp.hostinger.com'),
     'smtp_port'        => get_config($db, 'smtp_port', '465'),
     'smtp_secure'      => get_config($db, 'smtp_secure', 'ssl'),
-    'smtp_user'        => get_config($db, 'smtp_user', ''),
-    'smtp_pass'        => get_config($db, 'smtp_pass', ''),
-    'smtp_from'        => get_config($db, 'smtp_from', ''),
+    'smtp_user'        => get_config($db, 'smtp_user', 'administrador@powerpack.site'),
+    'smtp_pass'        => get_config($db, 'smtp_pass', 'PowerPack2026*'),
+    'smtp_from'        => get_config($db, 'smtp_from', 'administrador@powerpack.site'),
     'banco_info'       => get_config($db, 'banco_info', 'Bancolombia Cta Corriente # 104-582910-44'),
 ];
 

@@ -185,17 +185,16 @@ function set_config($db, $clave, $valor) {
 if ($db->querySingle("SELECT COUNT(*) FROM configuracion") == 0) {
     set_config($db, 'empresa_nombre', 'Power Pack');
     set_config($db, 'empresa_nit', '901.452.889-1');
-    set_config($db, 'empresa_telefono', '+57 300 467 0474');
-    set_config($db, 'empresa_email', 'ventas@powerpack.com.co');
-    set_config($db, 'empresa_website', 'https://powerpack.com.co');
+    set_config($db, 'empresa_email', 'administrador@powerpack.site');
+    set_config($db, 'empresa_website', 'https://powerpack.site');
     set_config($db, 'empresa_direccion', 'Calle 161 # 54 - 25, Bogotá, Colombia');
     set_config($db, 'smtp_host', 'smtp.hostinger.com');
     set_config($db, 'smtp_port', '465');
     set_config($db, 'smtp_secure', 'ssl');
-    set_config($db, 'smtp_user', '');
-    set_config($db, 'smtp_pass', '');
-    set_config($db, 'smtp_from', '');
-    set_config($db, 'banco_info', 'Bancolombia Cta Corriente # 104-582910-44 a nombre de Powerpack Solutions SAS');
+    set_config($db, 'smtp_user', 'administrador@powerpack.site');
+    set_config($db, 'smtp_pass', 'PowerPack2026*');
+    set_config($db, 'smtp_from', 'administrador@powerpack.site');
+    set_config($db, 'banco_info', 'Bancolombia Cta Corriente # 104-582910-44 a nombre de Power Pack');
 }
 
 // Inicializar primer usuario Administrador si no existe ninguno
