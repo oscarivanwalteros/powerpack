@@ -1,0 +1,12 @@
+# Base de datos SQLite local (Hostinger la crea automáticamente y así evitamos sobreescribir datos de clientes reales al actualizar desde GitHub)
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+
+# Logs y temporales
+*.log
+.DS_Store
+Thumbs.db

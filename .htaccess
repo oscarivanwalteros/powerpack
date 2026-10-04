@@ -1,0 +1,16 @@
+# Proteger archivos de base de datos SQLite y configuraciones sensibles
+<FilesMatch "\.(db|sqlite|sqlite3|log|env|ini)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# Desactivar listado de directorios
+Options -Indexes
+
+# Configuración de codificación UTF-8
+AddDefaultCharset UTF-8
