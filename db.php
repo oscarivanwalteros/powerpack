@@ -131,6 +131,17 @@ $db->exec("CREATE TABLE IF NOT EXISTS configuracion (
     valor TEXT
 )");
 
+$db->exec("CREATE TABLE IF NOT EXISTS usuarios (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nombre TEXT NOT NULL,
+    email TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    rol TEXT DEFAULT 'asesor', -- 'admin', 'asesor'
+    activo INTEGER DEFAULT 1,
+    ultimo_acceso DATETIME,
+    fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP
+)");
+
 // Migraciones seguras para bases de datos existentes
 function agregar_columna_si_falta($db, $tabla, $columna, $tipo) {
     $res = $db->query("PRAGMA table_info($tabla)");
@@ -185,6 +196,15 @@ if ($db->querySingle("SELECT COUNT(*) FROM configuracion") == 0) {
     set_config($db, 'smtp_pass', '');
     set_config($db, 'smtp_from', '');
     set_config($db, 'banco_info', 'Bancolombia Cta Corriente # 104-582910-44 a nombre de Powerpack Solutions SAS');
+}
+
+// Inicializar primer usuario Administrador si no existe ninguno
+if ($db->querySingle("SELECT COUNT(*) FROM usuarios") == 0) {
+    $stmt_admin = $db->prepare("INSERT INTO usuarios (nombre, email, password_hash, rol, activo, fecha_creacion) VALUES (?, ?, ?, 'admin', 1, datetime('now'))");
+    $stmt_admin->bindValue(1, 'Administrador Power Pack', SQLITE3_TEXT);
+    $stmt_admin->bindValue(2, 'admin@powerpack.com.co', SQLITE3_TEXT);
+    $stmt_admin->bindValue(3, password_hash('PowerPack2026*', PASSWORD_DEFAULT), SQLITE3_TEXT);
+    $stmt_admin->execute();
 }
 
 // Catálogo de Productos inicial (Maquinaria y Soluciones de Empaque)

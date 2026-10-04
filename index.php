@@ -11,6 +11,69 @@ $action = $_GET['action'] ?? null;
 $msg = $_GET['msg'] ?? '';
 $err = $_GET['err'] ?? '';
 
+// 1. Manejo de Cierre de Sesión (Logout)
+if ($page === 'logout') {
+    $_SESSION = [];
+    if (ini_get("session.use_cookies")) {
+        $params = session_get_cookie_params();
+        setcookie(session_name(), '', time() - 42000,
+            $params["path"], $params["domain"],
+            $params["secure"], $params["httponly"]
+        );
+    }
+    session_destroy();
+    header('Location: index.php?page=login&msg=logout');
+    exit;
+}
+
+// 2. Manejo de Inicio de Sesión (Login)
+if ($page === 'login') {
+    if (!empty($_SESSION['user_id'])) {
+        header('Location: index.php?page=dashboard');
+        exit;
+    }
+
+    $login_error = '';
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['iniciar_sesion'])) {
+        $email = strtolower(trim($_POST['email'] ?? ''));
+        $password = trim($_POST['password'] ?? '');
+
+        if (empty($email) || empty($password)) {
+            $login_error = 'Por favor ingresa tu correo y contraseña.';
+        } else {
+            $stmt_u = $db->prepare("SELECT * FROM usuarios WHERE LOWER(email) = ? LIMIT 1");
+            $stmt_u->bindValue(1, $email, SQLITE3_TEXT);
+            $res_u = $stmt_u->execute();
+            $user = $res_u->fetchArray(SQLITE3_ASSOC);
+
+            if ($user && password_verify($password, $user['password_hash'])) {
+                if (empty($user['activo'])) {
+                    $login_error = 'Esta cuenta de usuario ha sido desactivada por el administrador.';
+                } else {
+                    $_SESSION['user_id'] = (int)$user['id'];
+                    $_SESSION['user_nombre'] = $user['nombre'];
+                    $_SESSION['user_email'] = $user['email'];
+                    $_SESSION['user_rol'] = $user['rol'];
+                    $db->exec("UPDATE usuarios SET ultimo_acceso = datetime('now') WHERE id = " . (int)$user['id']);
+                    header('Location: index.php?page=dashboard');
+                    exit;
+                }
+            } else {
+                $login_error = 'Correo electrónico o contraseña incorrectos.';
+            }
+        }
+    }
+
+    include __DIR__ . '/pages/login.php';
+    exit;
+}
+
+// 3. Control de Acceso Global: Redirigir a Login si no hay sesión activa
+if (empty($_SESSION['user_id'])) {
+    header('Location: index.php?page=login');
+    exit;
+}
+
 // Configuración general precargada
 $config = [
     'empresa_nombre'   => get_config($db, 'empresa_nombre', 'Power Pack'),
@@ -865,6 +928,11 @@ header('Content-Type: text/html; charset=utf-8');
         </a>
 
         <div class="sidebar-section" style="margin-top:14px">Conexiones & Ajustes</div>
+        <?php if (($_SESSION['user_rol'] ?? '') === 'admin'): ?>
+        <a href="?page=usuarios" class="sidebar-item <?= $page=='usuarios'?'active':'' ?>">
+            <span>👥 Usuarios & Accesos</span>
+        </a>
+        <?php endif; ?>
         <a href="?page=importar" class="sidebar-item <?= $page=='importar'?'active':'' ?>">
             <span>📤 Subir Excel / CSV (Feria)</span>
         </a>
@@ -884,9 +952,21 @@ header('Content-Type: text/html; charset=utf-8');
             <span>🔍</span>
             <input type="text" name="q" placeholder="Buscar por contacto, empresa, email..." value="<?= h($_GET['q'] ?? '') ?>">
         </form>
-        <div class="topbar-actions">
+        <div class="topbar-actions" style="display:flex;align-items:center;gap:10px">
             <a href="?page=nueva_cotizacion" class="btn btn-secondary btn-sm">📄 + Cotización</a>
             <a href="?page=nuevo" class="btn btn-primary btn-sm">+ Nuevo Contacto</a>
+            
+            <div style="border-left:1px solid var(--border);padding-left:12px;margin-left:4px;display:flex;align-items:center;gap:10px">
+                <div style="text-align:right;line-height:1.2">
+                    <div style="font-weight:800;font-size:12px;color:var(--fg)"><?= h($_SESSION['user_nombre'] ?? 'Usuario') ?></div>
+                    <div style="font-size:10px;font-weight:700;color:<?= ($_SESSION['user_rol']??'')==='admin' ? '#ed1c29' : '#2c60a4' ?>;text-transform:uppercase">
+                        <?= ($_SESSION['user_rol']??'')==='admin' ? '👑 Admin' : '💼 Asesor' ?>
+                    </div>
+                </div>
+                <a href="?page=logout" class="btn btn-secondary btn-sm" title="Cerrar Sesión" style="padding:4px 8px;font-size:11px;color:#ef4444" onclick="return confirm('¿Deseas cerrar tu sesión actual?');">
+                    🚪 Salir
+                </a>
+            </div>
         </div>
     </header>
 
@@ -952,6 +1032,9 @@ header('Content-Type: text/html; charset=utf-8');
                 break;
             case 'conocimiento':
                 include 'pages/conocimiento.php';
+                break;
+            case 'usuarios':
+                include 'pages/usuarios.php';
                 break;
             case 'configuracion':
                 include 'pages/configuracion.php';
