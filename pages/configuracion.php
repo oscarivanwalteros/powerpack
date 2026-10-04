@@ -158,6 +158,33 @@ $plantillas_email = $db->query("SELECT * FROM plantillas WHERE tipo = 'email' OR
 
 </div>
 
+<!-- INTEGRACIÓN WEB & WEBHOOK PARA FORMULARIOS EXTERNOS -->
+<div style="background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:24px;box-shadow:var(--shadow-sm);margin-top:24px">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+        <span style="font-size:24px">🌐</span>
+        <div>
+            <h3 style="font-size:16px;font-weight:800">Captura Automática de Prospectos Web (Webhook / API)</h3>
+            <p style="font-size:12px;color:var(--fg-secondary)">Copia este código y pégalo en tu página web de Hostinger o WordPress para que cada contacto que escriba entre directo a tu CRM</p>
+        </div>
+    </div>
+
+    <div style="background:#0f172a;color:#e2e8f0;padding:16px;border-radius:var(--radius-sm);font-family:monospace;font-size:12px;overflow-x:auto;margin:14px 0">
+        &lt;!-- Formulario HTML para tu sitio web --&gt;<br>
+        &lt;form action="https://tudominio.com/api.php?action=lead_web" method="POST"&gt;<br>
+        &nbsp;&nbsp;&lt;input type="text" name="nombre" placeholder="Nombre completo" required&gt;<br>
+        &nbsp;&nbsp;&lt;input type="email" name="email" placeholder="Correo electrónico" required&gt;<br>
+        &nbsp;&nbsp;&lt;input type="tel" name="telefono" placeholder="WhatsApp / Celular" required&gt;<br>
+        &nbsp;&nbsp;&lt;input type="text" name="empresa" placeholder="Nombre de tu empresa"&gt;<br>
+        &nbsp;&nbsp;&lt;textarea name="mensaje" placeholder="¿Qué maquinaria o solución necesitas?"&gt;&lt;/textarea&gt;<br>
+        &nbsp;&nbsp;&lt;button type="submit"&gt;Solicitar Cotización&lt;/button&gt;<br>
+        &lt;/form&gt;
+    </div>
+
+    <div style="font-size:12px;color:var(--fg-secondary);line-height:1.5">
+        ✓ <strong>Respuesta Inmediata:</strong> Al recibir los datos, el CRM crea el prospecto en etapa <em>Lead Nuevo</em> y genera una tarea prioritaria: <em>"🚨 Llamar a nuevo lead web"</em> para no dejar enfriar al cliente.
+    </div>
+</div>
+
 <!-- MODAL NUEVA PLANTILLA -->
 <div id="modalPlantilla" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.6);z-index:200;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)">
     <div style="background:#fff;border-radius:var(--radius);max-width:550px;width:100%;padding:24px;box-shadow:var(--shadow-lg)">

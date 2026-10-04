@@ -14,6 +14,8 @@ $sql_act .= " ORDER BY fecha DESC";
 $actividades = $db->query($sql_act);
 
 $negocios = $db->query("SELECT * FROM negocios WHERE contacto_id = $id ORDER BY fecha_creacion DESC");
+$cots_contacto = $db->query("SELECT * FROM cotizaciones WHERE contacto_id = $id ORDER BY id DESC");
+$archivos_contacto = $db->query("SELECT * FROM archivos WHERE contacto_id = $id ORDER BY id DESC");
 $plantillas_wa = $db->query("SELECT * FROM plantillas WHERE tipo = 'whatsapp'");
 $plantillas_email = $db->query("SELECT * FROM plantillas WHERE tipo = 'email'");
 
@@ -35,7 +37,8 @@ $clean_tel = limpiar_telefono_whatsapp($c['telefono']);
             </div>
         </div>
     </div>
-    <div style="display:flex;gap:10px;align-items:center">
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <a href="?page=nueva_cotizacion&contacto_id=<?= $c['id'] ?>" class="btn btn-primary btn-sm">📄 + Cotizar</a>
         <?php if($clean_tel): ?>
         <button onclick="activarTab('tab-wa')" class="btn btn-whatsapp btn-sm">💬 Enviar WhatsApp</button>
         <?php endif; ?>
@@ -137,6 +140,62 @@ $clean_tel = limpiar_telefono_whatsapp($c['telefono']);
                 <?php if(!$hay_negocios): ?>
                 <div style="text-align:center;padding:14px 0;color:var(--fg-secondary);font-size:12px">
                     No hay oportunidades abiertas aún.
+                </div>
+                <?php endif; ?>
+            </div>
+        </div>
+
+        <!-- Tarjeta de Cotizaciones Formales -->
+        <div style="background:#fff;border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-sm);overflow:hidden">
+            <div style="padding:14px 18px;border-bottom:1px solid var(--border);font-weight:700;font-size:13px;display:flex;justify-content:space-between;align-items:center;background:#f8fafc">
+                <span>📄 Cotizaciones Formales</span>
+                <a href="?page=nueva_cotizacion&contacto_id=<?= $c['id'] ?>" class="btn btn-secondary btn-sm" style="padding:3px 8px;font-size:11px">+ Nueva</a>
+            </div>
+            <div style="padding:14px;display:flex;flex-direction:column;gap:8px">
+                <?php 
+                $hay_cots = false;
+                while($cot = $cots_contacto->fetchArray(SQLITE3_ASSOC)): 
+                    $hay_cots = true;
+                ?>
+                <div style="padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);display:flex;justify-content:space-between;align-items:center;background:#fafafa;font-size:12px">
+                    <div>
+                        <a href="?page=ver_cotizacion&id=<?= $cot['id'] ?>" style="font-weight:800;color:var(--accent)"><?= h($cot['numero']) ?></a>
+                        <div style="font-size:11px;color:var(--fg-secondary)"><?= $cot['fecha'] ?></div>
+                    </div>
+                    <div style="text-align:right">
+                        <strong>$<?= number_format($cot['total'], 0) ?></strong>
+                        <div><span style="font-size:10px;font-weight:700;text-transform:uppercase"><?= $cot['estado'] ?></span></div>
+                    </div>
+                </div>
+                <?php endwhile; ?>
+                <?php if(!$hay_cots): ?>
+                <div style="text-align:center;padding:10px 0;color:var(--fg-secondary);font-size:12px">
+                    Sin cotizaciones emitidas aún.
+                </div>
+                <?php endif; ?>
+            </div>
+        </div>
+
+        <!-- Tarjeta de Archivos y Documentos Adjuntos -->
+        <div style="background:#fff;border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-sm);overflow:hidden">
+            <div style="padding:14px 18px;border-bottom:1px solid var(--border);font-weight:700;font-size:13px;display:flex;justify-content:space-between;align-items:center;background:#f8fafc">
+                <span>📎 Archivos & Fichas Técnicas</span>
+                <button onclick="document.getElementById('modalSubirArchivoContacto').style.display='flex'" class="btn btn-secondary btn-sm" style="padding:3px 8px;font-size:11px">+ Subir</button>
+            </div>
+            <div style="padding:14px;display:flex;flex-direction:column;gap:8px">
+                <?php 
+                $hay_arch = false;
+                while($arc = $archivos_contacto->fetchArray(SQLITE3_ASSOC)): 
+                    $hay_arch = true;
+                ?>
+                <div style="padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);display:flex;justify-content:space-between;align-items:center;font-size:12px;background:#fafafa">
+                    <span style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="<?= h($arc['nombre_original']) ?>">📄 <?= h($arc['nombre_original']) ?></span>
+                    <a href="uploads/<?= h($arc['ruta']) ?>" target="_blank" download style="color:var(--email);font-weight:700">Ver</a>
+                </div>
+                <?php endwhile; ?>
+                <?php if(!$hay_arch): ?>
+                <div style="text-align:center;padding:10px 0;color:var(--fg-secondary);font-size:12px">
+                    Sin archivos adjuntos.
                 </div>
                 <?php endif; ?>
             </div>
@@ -442,6 +501,25 @@ Cordialmente,
         </form>
         <form id="formEliminar" method="POST" style="display:none">
             <input type="hidden" name="eliminar_contacto" value="1">
+        </form>
+    </div>
+</div>
+
+<!-- MODAL SUBIR ARCHIVO AL CONTACTO -->
+<div id="modalSubirArchivoContacto" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.6);z-index:200;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)">
+    <div style="background:#fff;border-radius:var(--radius);max-width:450px;width:100%;padding:24px;box-shadow:var(--shadow-lg)">
+        <h3 style="font-size:16px;font-weight:800;margin-bottom:14px">📎 Adjuntar Documento a <?= h($c['nombre']) ?></h3>
+        <form method="POST" enctype="multipart/form-data">
+            <input type="hidden" name="subir_archivo" value="1">
+            <input type="hidden" name="contacto_id" value="<?= $c['id'] ?>">
+            <div class="form-group">
+                <label>Seleccionar Archivo (PDF, RUT, Ficha Técnica, Imagen)</label>
+                <input type="file" name="archivo" required style="padding:8px">
+            </div>
+            <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:16px">
+                <button type="button" onclick="document.getElementById('modalSubirArchivoContacto').style.display='none'" class="btn btn-secondary">Cancelar</button>
+                <button type="submit" class="btn btn-primary">Subir Documento</button>
+            </div>
         </form>
     </div>
 </div>
