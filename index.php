@@ -1,4 +1,7 @@
 <?php
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/mailer.php';
 
@@ -10,11 +13,11 @@ $err = $_GET['err'] ?? '';
 
 // Configuración general precargada
 $config = [
-    'empresa_nombre'   => get_config($db, 'empresa_nombre', 'Powerpack Solutions SAS'),
+    'empresa_nombre'   => get_config($db, 'empresa_nombre', 'Power Pack'),
     'empresa_nit'      => get_config($db, 'empresa_nit', '901.452.889-1'),
     'empresa_telefono' => get_config($db, 'empresa_telefono', '+57 300 467 0474'),
     'empresa_email'    => get_config($db, 'empresa_email', 'ventas@powerpack.com.co'),
-    'empresa_direccion'=> get_config($db, 'empresa_direccion', 'Av. El Dorado #98-20, Parque Industrial Bogotá'),
+    'empresa_direccion'=> get_config($db, 'empresa_direccion', 'Calle 161 # 54 - 25, Bogotá, Colombia'),
     'smtp_host'        => get_config($db, 'smtp_host', 'smtp.hostinger.com'),
     'smtp_port'        => get_config($db, 'smtp_port', '465'),
     'smtp_secure'      => get_config($db, 'smtp_secure', 'ssl'),
@@ -26,6 +29,21 @@ $config = [
 
 // Contador de tareas pendientes para el sidebar
 $tareas_pendientes_count = (int)$db->querySingle("SELECT COUNT(*) FROM actividades WHERE tipo = 'tarea' AND completada = 0");
+
+// Descargar plantilla CSV de ejemplo para importar contactos de feria
+if ($page === 'descargar_plantilla_csv') {
+    header('Content-Type: text/csv; charset=UTF-8');
+    header('Content-Disposition: attachment; filename="plantilla_contactos_feria_powerpack.csv"');
+    echo "\xEF\xBB\xBF"; // UTF-8 BOM para apertura nativa en Microsoft Excel sin problemas de tildes
+    $out = fopen('php://output', 'w');
+    // Usamos delimitador punto y coma (;) estándar en Excel para Latinoamérica y España
+    fputcsv($out, ['Nombre', 'Apellido', 'Empresa', 'NIT', 'Cargo', 'Telefono', 'Email', 'Ciudad', 'Direccion', 'Sector', 'Interes', 'Notas_Feria'], ';');
+    fputcsv($out, ['Carlos', 'Gómez', 'Industrias del Plástico S.A.S.', '900.123.456-7', 'Jefe de Mantenimiento', '+57 310 987 6543', 'cgomez@industriasplastico.com', 'Bogotá', 'Zona Industrial Calle 13 # 68-40', 'Alimentos & Empaques', '3', 'Interesado en empacadora al vacío y dosificadora vistas en el stand'], ';');
+    fputcsv($out, ['María', 'Fernández', 'Lácteos El Manantial', '890.334.221-0', 'Gerente de Operaciones', '+57 320 555 1234', 'mfernandez@lacteosmanantial.co', 'Medellín', 'Carrera 45 # 20-10', 'Lácteos', '2', 'Solicita cotización formal de selladora continua para bolsas de queso'], ';');
+    fputcsv($out, ['Julián', 'Pérez', 'Alimentos NutriValle', '901.888.777-3', 'Director de Compras', '+57 315 444 8899', 'jperez@nutrivalle.com', 'Cali', 'Vía Yumbo Km 4', 'Snacks & Panadería', '3', 'Requiere asesoría técnica para automatización de línea de empaque'], ';');
+    fclose($out);
+    exit;
+}
 
 // Exportar contactos a CSV compatible con Excel
 if ($page === 'exportar_contactos') {
@@ -844,11 +862,14 @@ header('Content-Type: text/html; charset=utf-8');
         </a>
 
         <div class="sidebar-section" style="margin-top:14px">Conexiones & Ajustes</div>
-        <a href="?page=configuracion" class="sidebar-item <?= $page=='configuracion'?'active':'' ?>">
-            <span>⚙️ WhatsApp, SMTP & Webhook</span>
+        <a href="?page=importar" class="sidebar-item <?= $page=='importar'?'active':'' ?>">
+            <span>📤 Subir Excel / CSV (Feria)</span>
         </a>
         <a href="?page=exportar_contactos" class="sidebar-item">
             <span>📥 Exportar a Excel</span>
+        </a>
+        <a href="?page=configuracion" class="sidebar-item <?= $page=='configuracion'?'active':'' ?>">
+            <span>⚙️ WhatsApp, SMTP & Webhook</span>
         </a>
     </nav>
 </aside>
@@ -922,6 +943,9 @@ header('Content-Type: text/html; charset=utf-8');
                 break;
             case 'reportes':
                 include 'pages/reportes.php';
+                break;
+            case 'importar':
+                include 'pages/importar.php';
                 break;
             case 'configuracion':
                 include 'pages/configuracion.php';

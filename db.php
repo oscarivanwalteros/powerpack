@@ -150,7 +150,7 @@ agregar_columna_si_falta($db, 'contactos', 'empresa_id', 'INTEGER');
 agregar_columna_si_falta($db, 'contactos', 'website', 'TEXT');
 agregar_columna_si_falta($db, 'contactos', 'direccion', 'TEXT');
 agregar_columna_si_falta($db, 'negocios', 'empresa_id', 'INTEGER');
-agregar_columna_si_falta($db, 'negocios', 'ultima_actividad', 'DATETIME DEFAULT CURRENT_TIMESTAMP');
+agregar_columna_si_falta($db, 'negocios', 'ultima_actividad', 'DATETIME');
 agregar_columna_si_falta($db, 'actividades', 'empresa_id', 'INTEGER');
 agregar_columna_si_falta($db, 'actividades', 'fecha_vencimiento', 'DATETIME');
 agregar_columna_si_falta($db, 'actividades', 'completada', 'INTEGER DEFAULT 1');

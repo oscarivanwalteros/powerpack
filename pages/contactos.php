@@ -2,6 +2,7 @@
 $q = trim($_GET['q'] ?? '');
 $etapa_filtro = trim($_GET['etapa'] ?? '');
 $sector_filtro = trim($_GET['sector'] ?? '');
+$fuente_filtro = trim($_GET['fuente'] ?? '');
 
 $sql = "SELECT * FROM contactos WHERE 1=1";
 if ($q !== '') {
@@ -13,6 +14,9 @@ if ($etapa_filtro !== '') {
 }
 if ($sector_filtro !== '') {
     $sql .= " AND sector = '" . SQLite3::escapeString($sector_filtro) . "'";
+}
+if ($fuente_filtro !== '') {
+    $sql .= " AND fuente LIKE '%" . SQLite3::escapeString($fuente_filtro) . "%'";
 }
 $sql .= " ORDER BY ultima_actividad DESC";
 $contactos = $db->query($sql);
@@ -27,10 +31,18 @@ $sectores = $db->query("SELECT DISTINCT sector FROM contactos WHERE sector IS NO
         <p>Administra tus prospectos, historial y canales de comunicación directa</p>
     </div>
     <div style="display:flex;gap:10px">
+        <a href="?page=importar" class="btn btn-primary btn-sm" style="background:#2c60a4" title="Subir base de datos de feria o archivo Excel">📤 Subir Excel / CSV (Feria)</a>
         <a href="?page=exportar_contactos" class="btn btn-secondary btn-sm" title="Descargar en Excel">📥 Exportar CSV</a>
-        <a href="?page=nuevo" class="btn btn-primary btn-sm">+ Nuevo Contacto</a>
+        <a href="?page=nuevo" class="btn btn-secondary btn-sm">+ Nuevo Contacto</a>
     </div>
 </div>
+
+<?php if ($fuente_filtro): ?>
+<div class="alert alert-info" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af">
+    <span>🎪 Mostrando prospectos del evento: <strong><?= h($fuente_filtro) ?></strong></span>
+    <a href="?page=contactos" style="color:#1d4ed8;font-weight:700;font-size:12px;text-decoration:underline">Ver todos los contactos ✕</a>
+</div>
+<?php endif; ?>
 
 <div class="table-wrap">
     <div class="table-toolbar">
@@ -85,6 +97,9 @@ $sectores = $db->query("SELECT DISTINCT sector FROM contactos WHERE sector IS NO
                             </a>
                             <div style="font-size:12px;color:var(--fg-secondary)">
                                 <?= h($c['cargo'] ?: 'Contacto') ?> <?= $c['empresa'] ? 'en <strong>' . h($c['empresa']) . '</strong>' : '' ?>
+                                <?php if (!empty($c['fuente'])): ?>
+                                <span style="display:inline-block;padding:1px 6px;border-radius:4px;background:#eff6ff;color:#2c60a4;font-size:10px;font-weight:700;margin-left:4px">🎪 <?= h($c['fuente']) ?></span>
+                                <?php endif; ?>
                             </div>
                         </div>
                     </div>
