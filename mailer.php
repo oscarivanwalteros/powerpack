@@ -119,16 +119,30 @@ function enviar_correo_smtp($to, $asunto, $cuerpo_html, $config = []) {
         return ['ok' => false, 'error' => "Comando DATA rechazado: $res"];
     }
 
-    // Cabeceras y cuerpo del correo
-    $headers  = "Date: " . date('r') . "\r\n";
-    $headers .= "To: <$to>\r\n";
-    $headers .= "From: =?UTF-8?B?" . base64_encode($from_name) . "?= <$from_email>\r\n";
-    $headers .= "Reply-To: <$from_email>\r\n";
-    $headers .= "Subject: =?UTF-8?B?" . base64_encode($asunto) . "?=\r\n";
-    $headers .= "MIME-Version: 1.0\r\n";
-    $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
-    $headers .= "Content-Transfer-Encoding: 8bit\r\n";
-    $headers .= "X-Mailer: Powerpack-HubSpot-CRM/1.0\r\n\r\n";
+    // Envolver en plantilla corporativa oficial de Power Pack
+    if (strpos($cuerpo_html, '<html') === false) {
+        $cuerpo_html = '
+        <!DOCTYPE html>
+        <html>
+        <head><meta charset="UTF-8"></head>
+        <body style="font-family:Arial,-apple-system,sans-serif;line-height:1.6;color:#1e293b;background:#f8fafc;padding:20px;margin:0">
+            <div style="max-width:620px;margin:0 auto;background:#ffffff;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,0.05)">
+                <div style="background:#0f172a;padding:18px 24px;border-bottom:3px solid #2c60a4;display:flex;align-items:center;justify-content:space-between">
+                    <img src="https://power-pack.com.co/wp-content/uploads/2025/06/logo-blanco.png" alt="Power Pack" style="height:40px;width:auto">
+                    <span style="color:#94a3b8;font-size:12px;font-weight:bold">Soluciones Industriales</span>
+                </div>
+                <div style="padding:28px 24px;font-size:14px;color:#334155;line-height:1.6">
+                    ' . $cuerpo_html . '
+                </div>
+                <div style="background:#f8fafc;border-top:1px solid #e2e8f0;padding:18px 24px;font-size:11px;color:#64748b;text-align:center;line-height:1.5">
+                    <strong style="color:#0f172a">Power Pack</strong> • Maquinaria y Soluciones de Empaque<br>
+                    Calle 161 # 54 - 25, Bogotá, Colombia • Tel: +57 300 467 0474<br>
+                    <a href="https://powerpack.com.co" style="color:#2c60a4;text-decoration:none;font-weight:bold">www.powerpack.com.co</a>
+                </div>
+            </div>
+        </body>
+        </html>';
+    }
 
     $message_data = $headers . $cuerpo_html . "\r\n.";
     $write($message_data);

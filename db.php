@@ -172,11 +172,12 @@ function set_config($db, $clave, $valor) {
 
 // Inicializar configuración por defecto
 if ($db->querySingle("SELECT COUNT(*) FROM configuracion") == 0) {
-    set_config($db, 'empresa_nombre', 'Powerpack Solutions SAS');
+    set_config($db, 'empresa_nombre', 'Power Pack');
     set_config($db, 'empresa_nit', '901.452.889-1');
     set_config($db, 'empresa_telefono', '+57 300 467 0474');
     set_config($db, 'empresa_email', 'ventas@powerpack.com.co');
-    set_config($db, 'empresa_direccion', 'Av. El Dorado #98-20, Parque Industrial Bogotá');
+    set_config($db, 'empresa_website', 'https://powerpack.com.co');
+    set_config($db, 'empresa_direccion', 'Calle 161 # 54 - 25, Bogotá, Colombia');
     set_config($db, 'smtp_host', 'smtp.hostinger.com');
     set_config($db, 'smtp_port', '465');
     set_config($db, 'smtp_secure', 'ssl');

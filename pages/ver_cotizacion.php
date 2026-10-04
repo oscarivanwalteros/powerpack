@@ -52,32 +52,32 @@ $banco_info = get_config($db, 'banco_info', 'Bancolombia Cta Corriente # 104-582
 <!-- FORMATO DE COTIZACIÓN PROFESIONAL IMPRIMIBLE -->
 <div class="print-paper" style="background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:40px;box-shadow:var(--shadow-sm);max-width:900px;margin:0 auto">
     
-    <!-- CABECERA CORPORATIVA -->
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid var(--accent);padding-bottom:24px;margin-bottom:24px">
+    <!-- CABECERA CORPORATIVA CON LOGO OFICIAL -->
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #2c60a4;padding-bottom:20px;margin-bottom:24px">
         <div>
-            <div style="display:flex;align-items:center;gap:10px">
-                <div style="background:var(--accent);color:#fff;font-weight:900;font-size:20px;padding:6px 12px;border-radius:8px">⚡</div>
-                <div style="font-size:24px;font-weight:900;color:var(--fg);letter-spacing:-0.02em"><?= h($emp_nombre) ?></div>
+            <div style="margin-bottom:8px">
+                <img src="assets/logo-power-pack.png" alt="Power Pack" style="height:58px;width:auto;object-fit:contain">
             </div>
-            <div style="font-size:12px;color:var(--fg-secondary);margin-top:6px;line-height:1.4">
-                <strong>NIT:</strong> <?= h($emp_nit) ?><br>
+            <div style="font-size:12px;color:var(--fg-secondary);line-height:1.4">
+                <strong><?= h($emp_nombre) ?></strong> • NIT: <?= h($emp_nit) ?><br>
                 <?= h($emp_dir) ?><br>
-                Tel: <?= h($emp_tel) ?> • Email: <?= h($emp_email) ?>
+                Tel: <?= h($emp_tel) ?> • Email: <?= h($emp_email) ?><br>
+                <a href="https://powerpack.com.co" target="_blank" style="color:#2c60a4;font-weight:700">www.powerpack.com.co</a>
             </div>
         </div>
 
         <div style="text-align:right">
-            <div style="font-size:13px;font-weight:800;color:var(--fg-secondary);text-transform:uppercase;letter-spacing:0.06em">Propuesta Comercial</div>
-            <div style="font-size:24px;font-weight:900;color:var(--accent);margin:4px 0"><?= h($cot['numero']) ?></div>
+            <div style="font-size:12px;font-weight:800;color:#2c60a4;text-transform:uppercase;letter-spacing:0.06em">Propuesta Comercial Formal</div>
+            <div style="font-size:26px;font-weight:900;color:#ed1c29;margin:4px 0"><?= h($cot['numero']) ?></div>
             <div style="font-size:12px;color:var(--fg-secondary)">
-                <strong>Fecha:</strong> <?= date('d/m/Y', strtotime($cot['fecha'])) ?><br>
+                <strong>Fecha de Emisión:</strong> <?= date('d/m/Y', strtotime($cot['fecha'])) ?><br>
                 <strong>Vigencia:</strong> <?= (int)$cot['validez_dias'] ?> días calendario
             </div>
         </div>
     </div>
 
     <!-- DATOS DEL CLIENTE Y EMPRESA -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;background:#f8fafc;border:1px solid var(--border);border-radius:var(--radius-sm);padding:18px;margin-bottom:28px;font-size:13px">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;background:#f8fafc;border:1px solid var(--border);border-left:4px solid #2c60a4;border-radius:var(--radius-sm);padding:18px;margin-bottom:28px;font-size:13px">
         <div>
             <div style="font-size:11px;font-weight:800;color:var(--fg-secondary);text-transform:uppercase;margin-bottom:4px">Cliente / Empresa</div>
             <div style="font-size:16px;font-weight:800;color:var(--fg)"><?= h($cot['empresa_nombre'] ?: 'Particular') ?></div>
@@ -92,14 +92,14 @@ $banco_info = get_config($db, 'banco_info', 'Bancolombia Cta Corriente # 104-582
         </div>
     </div>
 
-    <!-- TABLA DE ITEMS -->
-    <table style="width:100%;margin-bottom:24px;border-collapse:collapse">
+    <!-- TABLA DE ITEMS CON COLORES POWER PACK -->
+    <table style="width:100%;margin-bottom:24px;border-collapse:collapse;border:1px solid #e2e8f0;border-radius:var(--radius-sm);overflow:hidden">
         <thead>
-            <tr style="background:#f1f5f9;border-bottom:2px solid var(--border)">
-                <th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:800;text-transform:uppercase">Ítem / Especificación Técnica</th>
-                <th style="padding:10px 14px;text-align:center;font-size:11px;font-weight:800;text-transform:uppercase;width:70px">Cant.</th>
-                <th style="padding:10px 14px;text-align:right;font-size:11px;font-weight:800;text-transform:uppercase;width:130px">Precio Unitario</th>
-                <th style="padding:10px 14px;text-align:right;font-size:11px;font-weight:800;text-transform:uppercase;width:140px">Total</th>
+            <tr style="background:#2c60a4;color:#ffffff">
+                <th style="padding:11px 14px;text-align:left;font-size:11px;font-weight:800;text-transform:uppercase;color:#fff">Ítem / Especificación Técnica</th>
+                <th style="padding:11px 14px;text-align:center;font-size:11px;font-weight:800;text-transform:uppercase;width:70px;color:#fff">Cant.</th>
+                <th style="padding:11px 14px;text-align:right;font-size:11px;font-weight:800;text-transform:uppercase;width:130px;color:#fff">Precio Unitario</th>
+                <th style="padding:11px 14px;text-align:right;font-size:11px;font-weight:800;text-transform:uppercase;width:140px;color:#fff">Total</th>
             </tr>
         </thead>
         <tbody>
@@ -125,7 +125,7 @@ $banco_info = get_config($db, 'banco_info', 'Bancolombia Cta Corriente # 104-582
     <!-- TOTALES Y CONDICIONES -->
     <div style="display:grid;grid-template-columns:1.2fr 0.8fr;gap:24px;margin-bottom:32px">
         <div style="font-size:12px;color:var(--fg);background:#fafafa;border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;line-height:1.6">
-            <div style="font-weight:800;margin-bottom:6px;text-transform:uppercase;font-size:11px;color:var(--fg-secondary)">Términos & Condiciones Comerciales</div>
+            <div style="font-weight:800;margin-bottom:6px;text-transform:uppercase;font-size:11px;color:#2c60a4">Términos & Condiciones Comerciales</div>
             <div><strong>• Forma de pago:</strong> <?= h($cot['condiciones']) ?></div>
             <div><strong>• Tiempo de entrega:</strong> <?= h($cot['tiempo_entrega']) ?></div>
             <div><strong>• Garantía técnica:</strong> <?= h($cot['garantia']) ?></div>
@@ -134,7 +134,7 @@ $banco_info = get_config($db, 'banco_info', 'Bancolombia Cta Corriente # 104-582
             </div>
         </div>
 
-        <div style="background:#f8fafc;border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px;display:flex;flex-direction:column;gap:8px;font-size:13px">
+        <div style="background:#f8fafc;border:1px solid var(--border);border-top:3px solid #2c60a4;border-radius:var(--radius-sm);padding:16px;display:flex;flex-direction:column;gap:8px;font-size:13px">
             <div style="display:flex;justify-content:space-between">
                 <span>Subtotal:</span>
                 <strong>$<?= number_format($cot['subtotal'], 0) ?></strong>
@@ -145,7 +145,7 @@ $banco_info = get_config($db, 'banco_info', 'Bancolombia Cta Corriente # 104-582
             </div>
             <div style="border-top:2px solid var(--border);padding-top:10px;display:flex;justify-content:space-between;font-size:18px;font-weight:900;color:var(--fg)">
                 <span>Total a Pagar:</span>
-                <span style="color:var(--accent)">$<?= number_format($cot['total'], 0) ?></span>
+                <span style="color:#ed1c29">$<?= number_format($cot['total'], 0) ?></span>
             </div>
         </div>
     </div>

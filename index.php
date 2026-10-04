@@ -437,22 +437,29 @@ header('Content-Type: text/html; charset=utf-8');
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Powerpack CRM Pro | Suite Comercial</title>
-    <meta name="theme-color" content="#f97316">
+    <title>Power Pack CRM | Suite Comercial</title>
+    <meta name="theme-color" content="#2c60a4">
+    <link rel="icon" type="image/png" href="assets/logo-power-pack.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
             --sidebar-w: 240px;
-            --topbar-h: 60px;
+            --topbar-h: 64px;
             --bg: #f8fafc;
             --bg-white: #ffffff;
             --sidebar-bg: #0f172a;
             --sidebar-fg: #94a3b8;
-            --accent: #f97316;
-            --accent-hover: #ea580c;
-            --accent-light: #fff7ed;
+            --brand-blue: #2c60a4;
+            --brand-blue-hover: #1f4b85;
+            --brand-red: #ed1c29;
+            --brand-red-hover: #cf1420;
+            --accent: #2c60a4;
+            --accent-hover: #1f4b85;
+            --accent-light: #eff6ff;
+            --action-red: #ed1c29;
+            --action-red-hover: #cf1420;
             --fg: #0f172a;
             --fg-secondary: #64748b;
             --border: #e2e8f0;
@@ -460,11 +467,11 @@ header('Content-Type: text/html; charset=utf-8');
             --whatsapp: #25D366;
             --whatsapp-hover: #1ebc59;
             --whatsapp-light: #e7f9ee;
-            --email: #2563eb;
+            --email: #2c60a4;
             --email-light: #eff6ff;
             --success: #059669;
             --warning: #d97706;
-            --danger: #ef4444;
+            --danger: #ed1c29;
             --radius: 10px;
             --radius-sm: 6px;
             --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
@@ -802,12 +809,10 @@ header('Content-Type: text/html; charset=utf-8');
 <body>
 
 <aside class="sidebar">
-    <div class="sidebar-logo">
-        <div class="brand-badge">⚡</div>
-        <div>
-            <div>Powerpack</div>
-            <div style="font-size:10px;font-weight:500;color:#64748b;letter-spacing:0">CRM Pro Suite</div>
-        </div>
+    <div class="sidebar-logo" style="padding:14px 20px;justify-content:center">
+        <a href="?page=dashboard" style="display:flex;align-items:center;justify-content:center">
+            <img src="assets/logo-blanco.png" alt="Power Pack" style="height:48px;max-width:180px;object-fit:contain">
+        </a>
     </div>
     <nav class="sidebar-nav">
         <div class="sidebar-section">Comercial & Cuentas</div>
