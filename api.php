@@ -113,13 +113,67 @@ if ($action === 'mover' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 
+// 3. Generar Redacción Comercial con IA (WhatsApp y Correo)
+if ($action === 'generar_ia' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_once __DIR__ . '/ai.php';
+
+    $input = json_decode(file_get_contents('php://input'), true);
+    if (!$input) {
+        $input = $_POST;
+    }
+
+    $cid = (int)($input['contacto_id'] ?? 0);
+    $canal = trim($input['canal'] ?? 'whatsapp'); // 'whatsapp' o 'email'
+    $objetivo = trim($input['objetivo'] ?? 'seguimiento_feria');
+    $instrucciones = trim($input['instrucciones'] ?? '');
+
+    $contacto = [];
+    if ($cid > 0) {
+        $contacto = $db->querySingle("SELECT * FROM contactos WHERE id = $cid", true);
+    }
+
+    if (!$contacto && !empty($input['prospecto_simulado'])) {
+        $contacto = $input['prospecto_simulado'];
+    }
+
+    if (!$contacto) {
+        $contacto = [
+            'nombre' => 'Estimado Cliente',
+            'empresa' => 'Empresa Industrial',
+            'ciudad' => 'Bogotá',
+            'fuente' => 'Feria Comercial',
+            'notas' => 'Interesado en maquinaria de empaque y sellado'
+        ];
+    }
+
+    $res = redactar_con_ia($db, $contacto, $canal, $objetivo, $instrucciones);
+    
+    // Generar enlace directo de WhatsApp si hay teléfono
+    $wa_url = '';
+    $clean_tel = limpiar_telefono_whatsapp($contacto['telefono'] ?? '');
+    if ($clean_tel && $canal === 'whatsapp') {
+        $wa_url = 'https://wa.me/' . $clean_tel . '?text=' . rawurlencode($res['mensaje']);
+    }
+
+    echo json_encode([
+        'ok' => true,
+        'asunto' => $res['asunto'] ?? '',
+        'mensaje' => $res['mensaje'] ?? '',
+        'origen' => $res['origen'] ?? 'IA Power Pack',
+        'wa_url' => $wa_url,
+        'api_warning' => $res['api_warning'] ?? ''
+    ]);
+    exit;
+}
+
 // Default response
 echo json_encode([
-    'crm' => 'Powerpack CRM API',
+    'crm' => 'Power Pack CRM API',
     'status' => 'online',
-    'version' => '2.0',
+    'version' => '2.5',
     'endpoints' => [
-        'POST api.php?action=lead_web' => 'Recibir leads desde formularios web externos',
-        'POST api.php?action=mover'    => 'Actualizar etapa de negocio en Kanban'
+        'POST api.php?action=lead_web'   => 'Recibir leads desde formularios web externos',
+        'POST api.php?action=mover'      => 'Actualizar etapa de negocio en Kanban',
+        'POST api.php?action=generar_ia' => 'Generar redacción comercial asistida con IA de Power Pack'
     ]
 ]);

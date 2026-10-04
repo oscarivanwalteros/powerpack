@@ -860,6 +860,9 @@ header('Content-Type: text/html; charset=utf-8');
         <a href="?page=reportes" class="sidebar-item <?= $page=='reportes'?'active':'' ?>">
             <span>📈 Embudo & Reportes</span>
         </a>
+        <a href="?page=conocimiento" class="sidebar-item <?= $page=='conocimiento'?'active':'' ?>">
+            <span>🧠 Repositorio IA & Empresa</span>
+        </a>
 
         <div class="sidebar-section" style="margin-top:14px">Conexiones & Ajustes</div>
         <a href="?page=importar" class="sidebar-item <?= $page=='importar'?'active':'' ?>">
@@ -946,6 +949,9 @@ header('Content-Type: text/html; charset=utf-8');
                 break;
             case 'importar':
                 include 'pages/importar.php';
+                break;
+            case 'conocimiento':
+                include 'pages/conocimiento.php';
                 break;
             case 'configuracion':
                 include 'pages/configuracion.php';

@@ -38,6 +38,9 @@ $clean_tel = limpiar_telefono_whatsapp($c['telefono']);
         </div>
     </div>
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <button onclick="abrirModalIA()" class="btn btn-sm" style="background:linear-gradient(135deg, #2c60a4 0%, #7c3aed 100%);color:#fff;font-weight:800;border:none;box-shadow:0 2px 6px rgba(124,58,237,0.3)">
+            ✨ Copiloto IA
+        </button>
         <a href="?page=nueva_cotizacion&contacto_id=<?= $c['id'] ?>" class="btn btn-primary btn-sm">📄 + Cotizar</a>
         <?php if($clean_tel): ?>
         <button onclick="activarTab('tab-wa')" class="btn btn-whatsapp btn-sm">💬 Enviar WhatsApp</button>
@@ -235,7 +238,12 @@ $clean_tel = limpiar_telefono_whatsapp($c['telefono']);
                                 <div style="font-size:11px;color:var(--fg-secondary);margin-top:3px">Se formateará automáticamente con prefijo internacional (+57).</div>
                             </div>
                             <div class="form-group">
-                                <label>Plantilla Rápida de WhatsApp</label>
+                                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+                                    <label style="margin:0">Plantilla Rápida</label>
+                                    <button type="button" onclick="abrirModalIA('whatsapp')" class="btn btn-secondary btn-sm" style="padding:2px 8px;font-size:11px;color:#2c60a4;font-weight:700">
+                                        ✨ Redactar con IA
+                                    </button>
+                                </div>
                                 <select id="select_plantilla_wa" onchange="cargarPlantillaWA(this)">
                                     <option value="">— Seleccionar plantilla predefinida —</option>
                                     <?php while($p = $plantillas_wa->fetchArray(SQLITE3_ASSOC)): ?>
@@ -269,7 +277,12 @@ $clean_tel = limpiar_telefono_whatsapp($c['telefono']);
                                 <input type="email" name="destinatario" value="<?= h($c['email']) ?>" required>
                             </div>
                             <div class="form-group">
-                                <label>Plantilla Rápida de Email</label>
+                                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+                                    <label style="margin:0">Plantilla Rápida de Email</label>
+                                    <button type="button" onclick="abrirModalIA('email')" class="btn btn-secondary btn-sm" style="padding:2px 8px;font-size:11px;color:#2c60a4;font-weight:700">
+                                        ✨ Redactar con IA
+                                    </button>
+                                </div>
                                 <select id="select_plantilla_email" onchange="cargarPlantillaEmail(this)">
                                     <option value="">— Seleccionar plantilla —</option>
                                     <?php while($pe = $plantillas_email->fetchArray(SQLITE3_ASSOC)): ?>
@@ -583,4 +596,153 @@ function confirmarEliminar() {
         document.getElementById('formEliminar').submit();
     }
 }
+
+// FUNCIONES DEL COPILOTO IA POWER PACK
+var ultimoTextoIA = '';
+var ultimoAsuntoIA = '';
+
+function abrirModalIA(canal) {
+    if (canal) {
+        document.getElementById('ia_canal').value = canal;
+    }
+    document.getElementById('modalCopilotoIA').style.display = 'flex';
+}
+
+function generarTextoIA() {
+    var btn = document.getElementById('btn-generar-ia');
+    var canal = document.getElementById('ia_canal').value;
+    var objetivo = document.getElementById('ia_objetivo').value;
+    var inst = document.getElementById('ia_instrucciones').value;
+    var box = document.getElementById('ia_resultado_box');
+    var tag = document.getElementById('ia_origen_tag');
+    var asuntoBox = document.getElementById('ia_asunto_box');
+    var msgBox = document.getElementById('ia_mensaje_box');
+
+    btn.disabled = true;
+    btn.innerText = '⚡ Consultando Repositorio y Redactando...';
+
+    fetch('api.php?action=generar_ia', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            contacto_id: <?= (int)$c['id'] ?>,
+            canal: canal,
+            objetivo: objetivo,
+            instrucciones: inst
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        btn.disabled = false;
+        btn.innerText = '⚡ Generar Redacción Asistida con IA';
+        
+        if (data.ok) {
+            box.style.display = 'block';
+            tag.innerText = 'Generado con: ' + (data.origen || 'Power Pack AI');
+            ultimoTextoIA = data.mensaje;
+            ultimoAsuntoIA = data.asunto || '';
+
+            if (canal === 'email' && data.asunto) {
+                asuntoBox.style.display = 'block';
+                asuntoBox.innerHTML = '<strong>Asunto:</strong> ' + data.asunto;
+                msgBox.innerHTML = data.mensaje;
+            } else {
+                asuntoBox.style.display = 'none';
+                msgBox.innerText = data.mensaje;
+            }
+        } else {
+            alert('Error de IA: ' + (data.error || 'No se pudo generar'));
+        }
+    })
+    .catch(err => {
+        btn.disabled = false;
+        btn.innerText = '⚡ Generar Redacción Asistida con IA';
+        alert('Error de conexión con la IA: ' + err.message);
+    });
+}
+
+function aplicarAlEditor() {
+    var canal = document.getElementById('ia_canal').value;
+    if (canal === 'whatsapp') {
+        activarTab('tab-wa');
+        document.getElementById('wa_mensaje').value = ultimoTextoIA;
+    } else {
+        activarTab('tab-email');
+        if (ultimoAsuntoIA) {
+            document.getElementById('email_asunto').value = ultimoAsuntoIA;
+        }
+        document.getElementById('email_cuerpo').value = ultimoTextoIA.replace(/<br\s*[\/]?>/gi, "\n").replace(/<[^>]+>/g, '');
+    }
+    document.getElementById('modalCopilotoIA').style.display = 'none';
+}
+
+function copiarTextoIA() {
+    var txt = document.getElementById('ia_mensaje_box').innerText;
+    navigator.clipboard.writeText(txt).then(() => {
+        alert('¡Texto copiado al portapapeles!');
+    });
+}
 </script>
+
+<!-- MODAL COPILOTO IA POWER PACK -->
+<div id="modalCopilotoIA" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.65);z-index:9999;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(3px)">
+    <div style="background:#fff;border-radius:12px;max-width:640px;width:100%;box-shadow:0 20px 25px -5px rgba(0,0,0,0.2);overflow:hidden">
+        <div style="background:linear-gradient(135deg, #0f172a 0%, #1e293b 100%);padding:18px 24px;border-bottom:3px solid #2c60a4;display:flex;justify-content:space-between;align-items:center">
+            <div style="display:flex;align-items:center;gap:10px">
+                <span style="font-size:22px">✨</span>
+                <div>
+                    <h3 style="color:#fff;margin:0;font-size:16px;font-weight:800">Copiloto IA Power Pack</h3>
+                    <div style="color:#94a3b8;font-size:11px">Redacción comercial asistida con la Base de Conocimiento de la empresa</div>
+                </div>
+            </div>
+            <button onclick="document.getElementById('modalCopilotoIA').style.display='none'" style="background:none;border:none;color:#94a3b8;font-size:22px;cursor:pointer">&times;</button>
+        </div>
+
+        <div style="padding:22px;display:flex;flex-direction:column;gap:14px">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+                <div>
+                    <label style="font-size:12px;font-weight:700">Canal:</label>
+                    <select id="ia_canal" style="width:100%;padding:8px 10px;font-size:13px;margin-top:4px">
+                        <option value="whatsapp">📱 Mensaje de WhatsApp</option>
+                        <option value="email">✉️ Correo Electrónico Formal</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size:12px;font-weight:700">Objetivo Comercial:</label>
+                    <select id="ia_objetivo" style="width:100%;padding:8px 10px;font-size:13px;margin-top:4px">
+                        <option value="seguimiento_feria">🎪 Seguimiento Post-Feria</option>
+                        <option value="primer_contacto">🤝 Presentación Comercial Inicial</option>
+                        <option value="propuesta">📄 Presentación de Cotización / Maquinaria</option>
+                        <option value="agendar_visita">🏢 Invitar al Showroom en Bogotá</option>
+                        <option value="reactivacion">🧊 Reactivar Cliente sin respuesta</option>
+                    </select>
+                </div>
+            </div>
+
+            <div>
+                <label style="font-size:12px;font-weight:700">Instrucciones o requerimiento del cliente (Opcional):</label>
+                <input type="text" id="ia_instrucciones" placeholder="Ej: Mencionar que tenemos entrega inmediata y 1 año de garantía..." style="width:100%;margin-top:4px;font-size:13px">
+            </div>
+
+            <button type="button" onclick="generarTextoIA()" class="btn btn-primary" id="btn-generar-ia" style="background:#2c60a4;padding:10px 20px;font-size:13px;font-weight:800;width:100%">
+                ⚡ Generar Redacción Asistida con IA
+            </button>
+
+            <!-- CONTENEDOR DEL RESULTADO -->
+            <div id="ia_resultado_box" style="display:none;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                    <span id="ia_origen_tag" style="font-size:11px;font-weight:800;color:#2c60a4"></span>
+                    <button type="button" onclick="copiarTextoIA()" class="btn btn-secondary btn-sm" style="padding:3px 8px;font-size:11px">📋 Copiar</button>
+                </div>
+                <div id="ia_asunto_box" style="display:none;font-weight:800;font-size:13px;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid #cbd5e1;color:#0f172a"></div>
+                <div id="ia_mensaje_box" style="font-size:13px;line-height:1.5;max-height:220px;overflow-y:auto;white-space:pre-wrap;color:#334155;background:#fff;padding:10px;border-radius:6px;border:1px solid #e2e8f0"></div>
+
+                <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:14px">
+                    <button type="button" onclick="aplicarAlEditor()" class="btn btn-primary btn-sm" style="background:#059669;font-weight:800;padding:8px 18px">
+                        ✅ Cargar en el Editor y Cerrar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
