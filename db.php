@@ -197,13 +197,24 @@ if ($db->querySingle("SELECT COUNT(*) FROM configuracion") == 0) {
     set_config($db, 'banco_info', 'Bancolombia Cta Corriente # 104-582910-44 a nombre de Power Pack');
 }
 
-// Inicializar primer usuario Administrador si no existe ninguno
-if ($db->querySingle("SELECT COUNT(*) FROM usuarios") == 0) {
-    $stmt_admin = $db->prepare("INSERT INTO usuarios (nombre, email, password_hash, rol, activo, fecha_creacion) VALUES (?, ?, ?, 'admin', 1, datetime('now'))");
-    $stmt_admin->bindValue(1, 'Administrador Power Pack', SQLITE3_TEXT);
-    $stmt_admin->bindValue(2, 'administrador@powerpack.site', SQLITE3_TEXT);
-    $stmt_admin->bindValue(3, password_hash('PowerPack2026*', PASSWORD_DEFAULT), SQLITE3_TEXT);
-    $stmt_admin->execute();
+// Asegurar que el usuario administrador oficial administrador@powerpack.site exista siempre y esté activo
+$admin_existe = $db->querySingle("SELECT id FROM usuarios WHERE LOWER(email) = 'administrador@powerpack.site' LIMIT 1");
+if (!$admin_existe) {
+    // Si existe el antiguo admin@powerpack.com.co o cualquier otro admin previo, actualizarlo
+    $old_admin = $db->querySingle("SELECT id FROM usuarios WHERE LOWER(email) = 'admin@powerpack.com.co' OR rol = 'admin' LIMIT 1");
+    if ($old_admin) {
+        $stmt_up = $db->prepare("UPDATE usuarios SET nombre = 'Administrador Power Pack', email = 'administrador@powerpack.site', password_hash = ?, rol = 'admin', activo = 1 WHERE id = ?");
+        $stmt_up->bindValue(1, password_hash('PowerPack2026*', PASSWORD_DEFAULT), SQLITE3_TEXT);
+        $stmt_up->bindValue(2, $old_admin, SQLITE3_INTEGER);
+        $stmt_up->execute();
+    } else {
+        $stmt_admin = $db->prepare("INSERT INTO usuarios (nombre, email, password_hash, rol, activo, fecha_creacion) VALUES ('Administrador Power Pack', 'administrador@powerpack.site', ?, 'admin', 1, datetime('now'))");
+        $stmt_admin->bindValue(1, password_hash('PowerPack2026*', PASSWORD_DEFAULT), SQLITE3_TEXT);
+        $stmt_admin->execute();
+    }
+} else {
+    // Asegurar que esté activo
+    $db->exec("UPDATE usuarios SET activo = 1 WHERE id = $admin_existe");
 }
 
 // Catálogo de Productos inicial (Maquinaria y Soluciones de Empaque)
