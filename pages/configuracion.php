@@ -5,7 +5,7 @@ $plantillas_email = $db->query("SELECT * FROM plantillas WHERE tipo = 'email' OR
 
 <div class="page-header">
     <div>
-        <h1>Configuración del CRM & Conexiones</h1>
+        <h1>Configuración & Conexiones</h1>
         <p>Configura tus credenciales de correo SMTP (Hostinger), WhatsApp y plantillas de mensajes rápidos</p>
     </div>
 </div>
@@ -18,7 +18,7 @@ $plantillas_email = $db->query("SELECT * FROM plantillas WHERE tipo = 'email' OR
             <span style="font-size:22px">✉️</span>
             <div>
                 <h3 style="font-size:16px;font-weight:800">Servidor de Correo SMTP (Hostinger)</h3>
-                <p style="font-size:12px;color:var(--fg-secondary)">Permite enviar correos y cotizaciones directamente desde el CRM</p>
+                <p style="font-size:12px;color:var(--fg-secondary)">Permite enviar correos y cotizaciones directamente desde la plataforma</p>
             </div>
         </div>
 
@@ -101,7 +101,7 @@ $plantillas_email = $db->query("SELECT * FROM plantillas WHERE tipo = 'email' OR
             </div>
 
             <div style="font-size:13px;color:var(--fg);line-height:1.6">
-                <p>El CRM utiliza el protocolo oficial de enlace directo <strong>WhatsApp Universal Click-to-Chat</strong>.</p>
+                <p>La plataforma utiliza el protocolo oficial de enlace directo <strong>WhatsApp Universal Click-to-Chat</strong>.</p>
                 <div style="background:var(--whatsapp-light);border:1px solid #bbf7d0;border-radius:var(--radius-sm);padding:12px;margin:12px 0;font-size:12px;color:#166534">
                     ✓ <strong>Sin costo de API:</strong> Funciona directamente en WhatsApp Web en tu PC y en la app móvil en tu celular.<br>
                     ✓ <strong>Historial Comercial:</strong> Cada mensaje enviado mediante el botón de WhatsApp queda registrado automáticamente en el timeline del prospecto.
@@ -164,7 +164,7 @@ $plantillas_email = $db->query("SELECT * FROM plantillas WHERE tipo = 'email' OR
         <span style="font-size:24px">🌐</span>
         <div>
             <h3 style="font-size:16px;font-weight:800">Captura Automática de Prospectos Web (Webhook / API)</h3>
-            <p style="font-size:12px;color:var(--fg-secondary)">Copia este código y pégalo en tu página web de Hostinger o WordPress para que cada contacto que escriba entre directo a tu CRM</p>
+            <p style="font-size:12px;color:var(--fg-secondary)">Copia este código y pégalo en tu página web de Hostinger o WordPress para que cada contacto que escriba entre directo a tu plataforma</p>
         </div>
     </div>
 
@@ -181,7 +181,7 @@ $plantillas_email = $db->query("SELECT * FROM plantillas WHERE tipo = 'email' OR
     </div>
 
     <div style="font-size:12px;color:var(--fg-secondary);line-height:1.5">
-        ✓ <strong>Respuesta Inmediata:</strong> Al recibir los datos, el CRM crea el prospecto en etapa <em>Lead Nuevo</em> y genera una tarea prioritaria: <em>"🚨 Llamar a nuevo lead web"</em> para no dejar enfriar al cliente.
+        ✓ <strong>Respuesta Inmediata:</strong> Al recibir los datos, el sistema crea el prospecto en etapa <em>Lead Nuevo</em> y genera una tarea prioritaria: <em>"🚨 Llamar a nuevo lead web"</em> para no dejar enfriar al cliente.
     </div>
 </div>
 

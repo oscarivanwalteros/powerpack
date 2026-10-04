@@ -93,7 +93,7 @@ if ($action === 'lead_web' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         'ok' => true,
         'creado' => $creado,
         'contacto_id' => $cid,
-        'mensaje' => 'Prospecto procesado exitosamente en Powerpack CRM'
+        'mensaje' => 'Prospecto procesado exitosamente en Power Pack'
     ]);
     exit;
 }
@@ -168,7 +168,7 @@ if ($action === 'generar_ia' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // Default response
 echo json_encode([
-    'crm' => 'Power Pack CRM API',
+    'plataforma' => 'Power Pack API',
     'status' => 'online',
     'version' => '2.5',
     'endpoints' => [

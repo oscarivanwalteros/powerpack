@@ -1,6 +1,6 @@
-# 💼 Powerpack CRM (PHP + SQLite)
+# 💼 Power Pack - Suite Comercial (PHP + SQLite)
 
-CRM comercial ágil, ligero y sin dependencias externas, optimizado para despliegue inmediato en **Hostinger** y servidores basados en Apache/LiteSpeed con soporte PHP 7.4 / 8.x.
+Plataforma comercial ágil, ligera y sin dependencias externas, optimizada para despliegue inmediato en **Hostinger** y servidores basados en Apache/LiteSpeed con soporte PHP 7.4 / 8.x.
 
 ---
 

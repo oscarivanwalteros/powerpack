@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Acceso Seguro | Power Pack CRM</title>
+    <title>Acceso Seguro | Power Pack</title>
     <link rel="icon" type="image/png" href="assets/logo-power-pack.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -174,7 +174,7 @@
 <div class="login-card">
     <div class="login-header">
         <img src="assets/logo-blanco.png" alt="Power Pack" class="login-logo">
-        <h1 class="login-title">Power Pack CRM</h1>
+        <h1 class="login-title">Power Pack</h1>
         <div class="login-subtitle">Acceso Seguro a la Plataforma Comercial</div>
     </div>
 
@@ -207,7 +207,7 @@
             </div>
 
             <button type="submit" class="btn-login">
-                <span>Ingresar al CRM</span>
+                <span>Ingresar a la Plataforma</span>
                 <span>→</span>
             </button>
         </form>

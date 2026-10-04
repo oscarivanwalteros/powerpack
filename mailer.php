@@ -10,7 +10,7 @@ function enviar_correo_smtp($to, $asunto, $cuerpo_html, $config = []) {
     $user = $config['smtp_user'] ?? '';
     $pass = $config['smtp_pass'] ?? '';
     $from_email = $config['smtp_from'] ?? $user;
-    $from_name = $config['empresa_nombre'] ?? 'Powerpack CRM';
+    $from_name = $config['empresa_nombre'] ?? 'Power Pack';
     $secure = $config['smtp_secure'] ?? ($port == 465 ? 'ssl' : 'tls');
 
     // Si no hay configuración SMTP, intentar con mail() nativo de PHP

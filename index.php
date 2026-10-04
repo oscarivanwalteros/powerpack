@@ -221,7 +221,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->bindValue(15, $direccion, SQLITE3_TEXT);
             $stmt->execute();
             $new_id = $db->lastInsertRowID();
-            $db->exec("INSERT INTO actividades (contacto_id, tipo, asunto, descripcion, resultado) VALUES ($new_id, 'nota', 'Contacto registrado en CRM', 'Se añadió el contacto desde el formulario.', 'creado')");
+            $db->exec("INSERT INTO actividades (contacto_id, tipo, asunto, descripcion, resultado) VALUES ($new_id, 'nota', 'Contacto registrado en el sistema', 'Se añadió el contacto desde el formulario.', 'creado')");
             header("Location: index.php?page=detalle&id=$new_id&msg=contacto_creado");
             exit;
         }
@@ -437,7 +437,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($resultado['ok']) {
                 header("Location: index.php?page=detalle&id=$id&msg=email_enviado");
             } else {
-                header("Location: index.php?page=detalle&id=$id&err=" . urlencode("Email registrado en CRM pero falló el envío SMTP: " . $resultado['error']));
+                header("Location: index.php?page=detalle&id=$id&err=" . urlencode("Email registrado en el sistema pero falló el envío SMTP: " . $resultado['error']));
             }
             exit;
         }
@@ -536,7 +536,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['probar_smtp'])) {
         $test_to = trim($_POST['test_email'] ?? '');
         if ($test_to) {
-            $res = enviar_correo_smtp($test_to, "Prueba de conexión SMTP - Powerpack CRM", "<h2>¡Conexión SMTP exitosa!</h2><p>Tu CRM Powerpack está listo para enviar correos desde Hostinger con alta entregabilidad.</p>", $config);
+            $res = enviar_correo_smtp($test_to, "Prueba de conexión SMTP - Power Pack", "<h2>¡Conexión SMTP exitosa!</h2><p>Tu plataforma Power Pack está lista para enviar correos desde Hostinger con alta entregabilidad.</p>", $config);
             if ($res['ok']) {
                 header("Location: index.php?page=configuracion&msg=smtp_ok");
             } else {
@@ -554,7 +554,7 @@ header('Content-Type: text/html; charset=utf-8');
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Power Pack CRM | Suite Comercial</title>
+    <title>Power Pack | Suite Comercial</title>
     <meta name="theme-color" content="#2c60a4">
     <link rel="icon" type="image/png" href="assets/logo-power-pack.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1007,7 +1007,7 @@ header('Content-Type: text/html; charset=utf-8');
     </header>
 
     <main class="content">
-        <?php if ($msg === 'contacto_creado'): ?><div class="alert alert-success">✅ Contacto creado exitosamente en el CRM.</div><?php endif; ?>
+        <?php if ($msg === 'contacto_creado'): ?><div class="alert alert-success">✅ Contacto creado exitosamente en el sistema.</div><?php endif; ?>
         <?php if ($msg === 'contacto_actualizado'): ?><div class="alert alert-success">✅ Contacto actualizado correctamente.</div><?php endif; ?>
         <?php if ($msg === 'contacto_eliminado'): ?><div class="alert alert-success">🗑️ Contacto eliminado correctamente.</div><?php endif; ?>
         <?php if ($msg === 'empresa_creada'): ?><div class="alert alert-success">🏢 Cuenta / Empresa B2B registrada con éxito.</div><?php endif; ?>

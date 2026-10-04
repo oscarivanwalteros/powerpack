@@ -258,7 +258,7 @@ $clean_tel = limpiar_telefono_whatsapp($c['telefono']);
                         </div>
                         <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
                             <button type="submit" name="abrir_whatsapp" value="1" class="btn btn-whatsapp">
-                                🚀 Abrir WhatsApp Web y Registrar en CRM
+                                🚀 Abrir WhatsApp Web y Registrar en Historial
                             </button>
                             <button type="submit" class="btn btn-secondary">
                                 📝 Solo Registrar en Historial

@@ -14,7 +14,7 @@ if (!function_exists('get_ai_default_knowledge')) {
 - Dirección Showroom Principal: Calle 161 # 54 - 25, Bogotá, Colombia.
 - Teléfono / WhatsApp Comercial: +57 300 467 0474
 - Correo Electrónico: ventas@powerpack.com.co
-- Sitio Web Oficial: https://powerpack.com.co (CRM en https://powerpack.site)
+- Sitio Web Oficial: https://powerpack.com.co (Plataforma en https://powerpack.site)
 - Misión: Impulsar la productividad y calidad de empaque de pequeñas, medianas y grandes empresas con tecnología confiable, asesoría experta y respaldo posventa inmediato.
 
 2. CATÁLOGO DE LÍNEAS DE MAQUINARIA Y ESPECIFICACIONES:

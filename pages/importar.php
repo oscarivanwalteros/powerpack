@@ -1,7 +1,7 @@
 <?php
 /**
  * Módulo de Importación Masiva de Prospectos (Excel / CSV / Ferias Comerciales)
- * Power Pack CRM Suite
+ * Power Pack Suite Comercial
  */
 
 $error_import = '';
@@ -407,7 +407,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ejecutar_importacion'
                 <li><strong>Plantilla Oficial:</strong> Puedes descargar nuestra plantilla modelo preconfigurada haciendo clic en el botón superior derecho.</li>
                 <li><strong>Compatibilidad con Excel en Colombia:</strong> Excel en español guarda los archivos CSV usando punto y coma (<code>;</code>). El sistema lo detecta y procesa automáticamente sin errores.</li>
                 <li><strong>Tildes y Eñes:</strong> Nombres como <em>"Bogotá"</em>, <em>"Medellín"</em> o <em>"Empaques"</em> se limpian automáticamente para que no aparezcan símbolos raros.</li>
-                <li><strong>Cuentas B2B:</strong> Si incluyes la columna de empresa, el CRM creará las cuentas corporativas automáticamente y vinculará a cada persona a su fábrica.</li>
+                <li><strong>Cuentas B2B:</strong> Si incluyes la columna de empresa, el sistema creará las cuentas corporativas automáticamente y vinculará a cada persona a su fábrica.</li>
             </ul>
         </div>
 
@@ -517,7 +517,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ejecutar_importacion'
         <div style="display:flex;gap:24px;margin-bottom:24px;padding:0 8px">
             <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;cursor:pointer">
                 <input type="checkbox" name="crear_empresa_auto" value="1" checked>
-                <span>🏢 Crear automáticamente la Cuenta B2B (Fábrica) si no existe en el CRM</span>
+                <span>🏢 Crear automáticamente la Cuenta B2B (Fábrica) si no existe en el sistema</span>
             </label>
             <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;cursor:pointer">
                 <input type="checkbox" name="crear_negocio_auto" value="1" checked>
@@ -531,7 +531,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ejecutar_importacion'
                 <thead>
                     <tr style="background:#2c60a4;color:#fff">
                         <th style="padding:10px 14px;text-align:left;font-size:12px">Columna de tu Excel</th>
-                        <th style="padding:10px 14px;text-align:left;font-size:12px;width:280px">Asignar al campo del CRM:</th>
+                        <th style="padding:10px 14px;text-align:left;font-size:12px;width:280px">Asignar al campo:</th>
                         <th style="padding:10px 14px;text-align:left;font-size:12px">Muestra de datos (primeras filas)</th>
                     </tr>
                 </thead>
@@ -580,7 +580,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ejecutar_importacion'
         <div style="display:flex;justify-content:flex-end;gap:12px">
             <a href="?page=importar" class="btn btn-secondary" style="padding:12px 20px">Cancelar</a>
             <button type="submit" class="btn btn-primary" style="padding:12px 28px;font-size:14px;font-weight:800;background:#2c60a4">
-                🚀 Importar <?= $total_filas ?> Prospectos al CRM Ahora
+                🚀 Importar <?= $total_filas ?> Prospectos al Sistema Ahora
             </button>
         </div>
     </form>
@@ -598,7 +598,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ejecutar_importacion'
     
     <h2 style="margin:0 0 8px 0;color:#0f172a">¡Importación completada con éxito!</h2>
     <p style="color:var(--fg-secondary);font-size:14px;margin-bottom:30px">
-        La base de datos de la feria ha sido procesada e ingresada al CRM Power Pack sin errores.
+        La base de datos de la feria ha sido procesada e ingresada a Power Pack sin errores.
     </p>
 
     <!-- MÉTRICAS EN TARJETAS -->
