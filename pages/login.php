@@ -198,7 +198,7 @@
 
             <div class="form-group">
                 <label for="email">Correo Corporativo</label>
-                <input type="email" id="email" name="email" value="<?= h($_POST['email'] ?? '') ?>" required autofocus placeholder="usuario@powerpack.com.co">
+                <input type="email" id="email" name="email" value="<?= h($_POST['email'] ?? '') ?>" required autofocus placeholder="administrador@powerpack.site">
             </div>
 
             <div class="form-group">
@@ -214,9 +214,9 @@
 
         <div class="seed-box">
             <strong>🔑 Acceso Inicial de Administrador:</strong><br>
-            • Correo: <code>admin@powerpack.com.co</code><br>
+            • Correo: <code>administrador@powerpack.site</code><br>
             • Contraseña: <code>PowerPack2026*</code><br>
-            <span style="font-size:10px;color:#3b82f6">(Podrás cambiarla y crear tus propios usuarios en el panel de administración).</span>
+            <span style="font-size:10px;color:#3b82f6">(Podrás cambiarla y crear tus propios asesores en el panel de administración).</span>
         </div>
     </div>
 

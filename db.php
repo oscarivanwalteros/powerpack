@@ -202,7 +202,7 @@ if ($db->querySingle("SELECT COUNT(*) FROM configuracion") == 0) {
 if ($db->querySingle("SELECT COUNT(*) FROM usuarios") == 0) {
     $stmt_admin = $db->prepare("INSERT INTO usuarios (nombre, email, password_hash, rol, activo, fecha_creacion) VALUES (?, ?, ?, 'admin', 1, datetime('now'))");
     $stmt_admin->bindValue(1, 'Administrador Power Pack', SQLITE3_TEXT);
-    $stmt_admin->bindValue(2, 'admin@powerpack.com.co', SQLITE3_TEXT);
+    $stmt_admin->bindValue(2, 'administrador@powerpack.site', SQLITE3_TEXT);
     $stmt_admin->bindValue(3, password_hash('PowerPack2026*', PASSWORD_DEFAULT), SQLITE3_TEXT);
     $stmt_admin->execute();
 }
