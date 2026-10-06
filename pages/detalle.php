@@ -1,4 +1,9 @@
 <?php
+$id = (int)($_GET['id'] ?? $id ?? 0);
+if ($id <= 0) {
+    echo "<div style='text-align:center;padding:60px 20px'><h2>Contacto no especificado</h2><p><a href='?page=contactos' class='btn btn-secondary' style='margin-top:10px'>Volver a Contactos</a></p></div>";
+    return;
+}
 $c = $db->querySingle("SELECT * FROM contactos WHERE id = $id", true);
 if (!$c) {
     echo "<div style='text-align:center;padding:60px 20px'><h2>Contacto no encontrado</h2><p><a href='?page=contactos' class='btn btn-secondary' style='margin-top:10px'>Volver a Contactos</a></p></div>";

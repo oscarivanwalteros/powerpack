@@ -148,10 +148,13 @@ function moverNegocio(e, etapa) {
     e.preventDefault();
     const id = e.dataTransfer.getData('negocio_id');
     if (!id) return;
-    fetch('?page=api&action=mover', {
+    fetch('api.php?action=mover', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ negocio_id: id, etapa: etapa })
-    }).then(r => r.json()).then(() => location.reload());
+    }).then(r => r.json()).then(() => location.reload()).catch(err => {
+        console.error('Error al mover negocio:', err);
+        location.reload();
+    });
 }
 </script>

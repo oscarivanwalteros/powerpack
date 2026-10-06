@@ -134,6 +134,7 @@ $contactos_lista = $db->query("SELECT id, nombre, apellido, empresa FROM contact
         </div>
         <form method="POST">
             <input type="hidden" name="nueva_tarea" value="1">
+            <input type="hidden" name="return_url" value="index.php?page=tareas">
             <div class="form-group">
                 <label>Contacto Asociado (Opcional)</label>
                 <select name="contacto_id">

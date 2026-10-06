@@ -104,6 +104,12 @@ if ($page === 'login') {
     exit;
 }
 
+// Soporte de enrutamiento para llamadas API vía ?page=api
+if ($page === 'api') {
+    include __DIR__ . '/api.php';
+    exit;
+}
+
 // 3. Control de Acceso Global: Redirigir a Login si no hay sesión activa
 if (empty($_SESSION['user_id'])) {
     header('Location: index.php?page=login');
@@ -496,6 +502,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($cid > 0) {
             $db->exec("UPDATE contactos SET ultima_actividad = datetime('now') WHERE id = $cid");
+        }
+
+        $return_url = trim($_POST['return_url'] ?? '');
+        if (!empty($return_url)) {
+            $sep = (strpos($return_url, '?') !== false) ? '&' : '?';
+            header("Location: {$return_url}{$sep}msg=tarea_creada");
+        } elseif ($cid > 0) {
             header("Location: index.php?page=detalle&id=$cid&msg=tarea_creada");
         } else {
             header("Location: index.php?page=tareas&msg=tarea_creada");
@@ -579,6 +592,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 header("Location: index.php?page=configuracion&err=" . urlencode("Error al conectar con SMTP: " . $res['error']));
             }
+            exit;
+        }
+    }
+
+    // 13b. Guardar Plantilla de Mensaje Rápido
+    if (isset($_POST['guardar_plantilla'])) {
+        $tipo = in_array($_POST['tipo'] ?? '', ['whatsapp', 'email']) ? $_POST['tipo'] : 'whatsapp';
+        $titulo = trim($_POST['titulo'] ?? '');
+        $asunto = trim($_POST['asunto'] ?? '');
+        $cuerpo = trim($_POST['cuerpo'] ?? '');
+
+        if ($titulo && $cuerpo) {
+            $stmt = $db->prepare("INSERT INTO plantillas (tipo, titulo, asunto, cuerpo) VALUES (?, ?, ?, ?)");
+            $stmt->bindValue(1, $tipo, SQLITE3_TEXT);
+            $stmt->bindValue(2, $titulo, SQLITE3_TEXT);
+            $stmt->bindValue(3, $asunto, SQLITE3_TEXT);
+            $stmt->bindValue(4, $cuerpo, SQLITE3_TEXT);
+            $stmt->execute();
+            header("Location: index.php?page=configuracion&msg=plantilla_guardada");
+            exit;
+        }
+    }
+
+    // 13c. Eliminar Plantilla de Mensaje
+    if (isset($_POST['eliminar_plantilla'])) {
+        $pid = (int)($_POST['plantilla_id'] ?? 0);
+        if ($pid > 0) {
+            $db->exec("DELETE FROM plantillas WHERE id = $pid");
+            header("Location: index.php?page=configuracion&msg=plantilla_eliminada");
             exit;
         }
     }
