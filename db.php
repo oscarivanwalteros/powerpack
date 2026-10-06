@@ -230,6 +230,12 @@ if (!$admin_existe) {
     $db->exec("UPDATE usuarios SET activo = 1 WHERE id = $admin_existe");
 }
 
+// Auto-migración: actualizar modelo de Google Gemini si tiene el anterior gemini-2.0-flash deprecado
+$current_ai_model = get_config($db, 'ai_model', '');
+if ($current_ai_model === 'gemini-2.0-flash' || empty($current_ai_model)) {
+    set_config($db, 'ai_model', 'gemini-3.8-flash');
+}
+
 // Catálogo de Productos inicial (Maquinaria y Soluciones de Empaque)
 if ($db->querySingle("SELECT COUNT(*) FROM productos") == 0) {
     $db->exec("INSERT INTO productos (nombre, codigo, precio, categoria, descripcion) VALUES

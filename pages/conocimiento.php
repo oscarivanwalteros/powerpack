@@ -12,7 +12,7 @@ $mensaje_error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['guardar_ai_config'])) {
     set_config($db, 'ai_provider', trim($_POST['ai_provider'] ?? 'gemini'));
     set_config($db, 'ai_api_key', trim($_POST['ai_api_key'] ?? ''));
-    set_config($db, 'ai_model', trim($_POST['ai_model'] ?? 'gemini-2.0-flash'));
+    set_config($db, 'ai_model', trim($_POST['ai_model'] ?? 'gemini-3.8-flash'));
     $mensaje_exito = 'Configuración de Inteligencia Artificial guardada correctamente.';
 }
 
@@ -147,7 +147,8 @@ $skills_list = $db->query("SELECT * FROM skills_ia ORDER BY id ASC");
                     <div class="form-group">
                         <label style="font-weight:700;font-size:12px">Modelo de IA:</label>
                         <select name="ai_model" id="ai_model" style="font-weight:600">
-                            <option value="gemini-2.0-flash" <?= $ai_settings['model']==='gemini-2.0-flash'?'selected':'' ?>>Gemini 2.0 Flash (Ultrarrápido y potente)</option>
+                            <option value="gemini-3.8-flash" <?= ($ai_settings['model']==='gemini-3.8-flash'||$ai_settings['model']==='gemini-2.0-flash')?'selected':'' ?>>Gemini 3.8 Flash (Recomendado - Nueva Generación)</option>
+                            <option value="gemini-2.5-flash" <?= $ai_settings['model']==='gemini-2.5-flash'?'selected':'' ?>>Gemini 2.5 Flash</option>
                             <option value="gemini-1.5-flash" <?= $ai_settings['model']==='gemini-1.5-flash'?'selected':'' ?>>Gemini 1.5 Flash</option>
                             <option value="gpt-4o-mini" <?= $ai_settings['model']==='gpt-4o-mini'?'selected':'' ?>>GPT-4o Mini</option>
                         </select>
@@ -417,9 +418,9 @@ function actualizarModelos() {
     modelSelect.innerHTML = '';
     
     if (prov === 'gemini') {
-        modelSelect.innerHTML += '<option value="gemini-2.0-flash">Gemini 2.0 Flash (Recomendado - Rápido y moderno)</option>';
+        modelSelect.innerHTML += '<option value="gemini-3.8-flash">Gemini 3.8 Flash (Recomendado - Nueva Generación)</option>';
+        modelSelect.innerHTML += '<option value="gemini-2.5-flash">Gemini 2.5 Flash</option>';
         modelSelect.innerHTML += '<option value="gemini-1.5-flash">Gemini 1.5 Flash</option>';
-        modelSelect.innerHTML += '<option value="gemini-1.5-pro">Gemini 1.5 Pro</option>';
     } else {
         modelSelect.innerHTML += '<option value="gpt-4o-mini">GPT-4o Mini (Recomendado por precio/velocidad)</option>';
         modelSelect.innerHTML += '<option value="gpt-4o">GPT-4o</option>';
@@ -480,7 +481,10 @@ function conectarGeminiAJAX(inputId, statusId) {
     var provSelect = document.getElementById('ai_provider');
     var modelSelect = document.getElementById('ai_model');
     var provider = provSelect ? provSelect.value : 'gemini';
-    var model = modelSelect ? modelSelect.value : 'gemini-2.0-flash';
+    var model = modelSelect ? modelSelect.value : 'gemini-3.8-flash';
+    if (provider === 'gemini' && (model === 'gemini-2.0-flash' || !model)) {
+        model = 'gemini-3.8-flash';
+    }
     var statusDiv = document.getElementById(statusId);
     var btn = document.getElementById('btn-conectar-ia');
 

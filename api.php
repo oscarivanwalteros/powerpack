@@ -192,7 +192,10 @@ if ($action === 'guardar_ai_key' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $api_key = trim($input['api_key'] ?? '');
     $provider = trim($input['provider'] ?? 'gemini');
-    $model = trim($input['model'] ?? ($provider === 'gemini' ? 'gemini-2.0-flash' : 'gpt-4o-mini'));
+    $model = trim($input['model'] ?? ($provider === 'gemini' ? 'gemini-3.8-flash' : 'gpt-4o-mini'));
+    if ($provider === 'gemini' && ($model === 'gemini-2.0-flash' || empty($model))) {
+        $model = 'gemini-3.8-flash';
+    }
 
     if (empty($api_key)) {
         // Si vacían la API Key, quitarla y volver al motor interno
@@ -214,13 +217,8 @@ if ($action === 'guardar_ai_key' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $ping = llamar_gemini($api_key, $model, 'Di únicamente: LISTO', 'Eres el asistente comercial de Power Pack');
         $test_ok = $ping['ok'];
         $test_err = $ping['error'] ?? '';
-        // Si gemini-2.0-flash tuviera error de nombre de modelo, intentar gemini-1.5-flash
-        if (!$test_ok && strpos(strtolower($test_err), 'not found') !== false) {
-            $ping2 = llamar_gemini($api_key, 'gemini-1.5-flash', 'Di únicamente: LISTO', 'Eres el asistente comercial de Power Pack');
-            if ($ping2['ok']) {
-                $test_ok = true;
-                $model = 'gemini-1.5-flash';
-            }
+        if ($test_ok && !empty($ping['model'])) {
+            $model = $ping['model'];
         }
     } else {
         $ping = llamar_openai($api_key, $model, 'Di únicamente: LISTO', 'Eres el asistente comercial de Power Pack');

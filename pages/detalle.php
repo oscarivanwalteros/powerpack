@@ -911,7 +911,7 @@ function conectarGeminiAJAX(inputId, statusId, provider, model) {
         body: JSON.stringify({
             api_key: key,
             provider: provider || 'gemini',
-            model: model || 'gemini-2.0-flash'
+            model: (model && model !== 'gemini-2.0-flash') ? model : 'gemini-3.8-flash'
         })
     })
     .then(function(r) { return r.json(); })
@@ -1079,7 +1079,7 @@ function conectarGeminiAJAX(inputId, statusId, provider, model) {
 
             <!-- PASO 3 -->
             <div>
-                <button type="button" onclick="conectarGeminiAJAX('modal_gemini_key', 'modal_gemini_status', 'gemini', 'gemini-2.0-flash')" class="btn btn-primary" style="width:100%;padding:12px;font-size:14px;font-weight:800;background:#059669;display:flex;align-items:center;justify-content:center;gap:8px">
+                <button type="button" onclick="conectarGeminiAJAX('modal_gemini_key', 'modal_gemini_status', 'gemini', 'gemini-3.8-flash')" class="btn btn-primary" style="width:100%;padding:12px;font-size:14px;font-weight:800;background:#059669;display:flex;align-items:center;justify-content:center;gap:8px">
                     <span>⚡ Paso 3: Conectar y Validar Clave en Vivo</span>
                 </button>
             </div>

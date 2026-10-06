@@ -82,7 +82,7 @@ function get_ai_settings($db) {
     return [
         'provider'   => get_config($db, 'ai_provider', 'gemini'), // 'gemini', 'openai'
         'api_key'    => get_config($db, 'ai_api_key', ''),
-        'model'      => get_config($db, 'ai_model', 'gemini-2.0-flash'), // 'gemini-2.0-flash', 'gemini-1.5-flash', 'gpt-4o-mini'
+        'model'      => get_config($db, 'ai_model', 'gemini-3.8-flash'), // 'gemini-3.8-flash', 'gemini-2.5-flash', 'gemini-1.5-flash', 'gpt-4o-mini'
         'knowledge'  => get_ai_knowledge_base($db)
     ];
 }
@@ -157,46 +157,88 @@ function ai_http_post($url, $headers, $payload_json, $timeout = 18) {
     }
 }
 
-// Llamar a la API de Google Gemini
+// Llamar a la API de Google Gemini (Soporta gemini-3.8-flash y auto-recuperación de modelo)
 function llamar_gemini($api_key, $model, $prompt, $system_instruction) {
-    $url = "https://generativelanguage.googleapis.com/v1beta/models/" . urlencode($model) . ":generateContent?key=" . urlencode($api_key);
-    
-    $payload = [
-        'systemInstruction' => [
-            'parts' => [
-                ['text' => $system_instruction]
-            ]
-        ],
-        'contents' => [
-            [
-                'role' => 'user',
+    if (empty($model) || $model === 'gemini-2.0-flash') {
+        $model = 'gemini-3.8-flash';
+    }
+
+    $candidatos = array_values(array_unique([
+        $model,
+        'gemini-3.8-flash',
+        'gemini-2.5-flash',
+        'gemini-1.5-flash'
+    ]));
+
+    $last_err = '';
+
+    for ($i = 0; $i < count($candidatos); $i++) {
+        $m = $candidatos[$i];
+        $url = "https://generativelanguage.googleapis.com/v1beta/models/" . urlencode($m) . ":generateContent?key=" . urlencode($api_key);
+        
+        $payload = [
+            'systemInstruction' => [
                 'parts' => [
-                    ['text' => $prompt]
+                    ['text' => $system_instruction]
                 ]
+            ],
+            'contents' => [
+                [
+                    'role' => 'user',
+                    'parts' => [
+                        ['text' => $prompt]
+                    ]
+                ]
+            ],
+            'generationConfig' => [
+                'temperature' => 0.4,
+                'maxOutputTokens' => 1200
             ]
-        ],
-        'generationConfig' => [
-            'temperature' => 0.4,
-            'maxOutputTokens' => 1200
-        ]
-    ];
+        ];
 
-    $headers = [
-        'Content-Type: application/json'
-    ];
+        $headers = [
+            'Content-Type: application/json'
+        ];
 
-    $resp = ai_http_post($url, $headers, json_encode($payload));
-    if (!$resp['ok']) {
-        return ['ok' => false, 'error' => $resp['error'] ?? "Error HTTP " . ($resp['code'] ?? '') . ": " . ($resp['body'] ?? '')];
+        $resp = ai_http_post($url, $headers, json_encode($payload));
+        if ($resp['ok']) {
+            $json = json_decode($resp['body'] ?? '', true);
+            if (!empty($json['candidates'][0]['content']['parts'][0]['text'])) {
+                return [
+                    'ok' => true,
+                    'text' => trim($json['candidates'][0]['content']['parts'][0]['text']),
+                    'model' => $m
+                ];
+            }
+        }
+
+        // Si falló, analizar el error y buscar si Google recomienda un modelo específico
+        $body_str = $resp['body'] ?? '';
+        $err_json = json_decode($body_str, true);
+        $err_msg = $err_json['error']['message'] ?? ($resp['error'] ?? "Error HTTP " . ($resp['code'] ?? ''));
+        $last_err = $err_msg;
+
+        // Si Google devuelve: "Please update your code to use models/gemini-3.8-flash"
+        if (preg_match('/models\/(gemini-[a-zA-Z0-9\.\-_]+)/i', $err_msg, $match_sug)) {
+            $sug = $match_sug[1];
+            if (!in_array($sug, $candidatos)) {
+                $candidatos[] = $sug;
+            }
+        }
+
+        // Si el error NO es de modelo faltante / 404 / no longer available (ej. clave inválida 400 o 403), no seguir probando otros modelos
+        $err_lower = strtolower($err_msg);
+        $es_error_modelo = strpos($err_lower, 'not found') !== false 
+            || strpos($err_lower, 'no longer available') !== false 
+            || strpos($err_lower, 'not_found') !== false 
+            || ($resp['code'] ?? 0) === 404;
+
+        if (!$es_error_modelo) {
+            return ['ok' => false, 'error' => $err_msg, 'model' => $m];
+        }
     }
 
-    $json = json_decode($resp['body'], true);
-    if (!empty($json['candidates'][0]['content']['parts'][0]['text'])) {
-        return ['ok' => true, 'text' => trim($json['candidates'][0]['content']['parts'][0]['text'])];
-    }
-
-    $error_msg = $json['error']['message'] ?? 'Respuesta inesperada de Gemini API';
-    return ['ok' => false, 'error' => $error_msg];
+    return ['ok' => false, 'error' => $last_err, 'model' => $model];
 }
 
 // Llamar a la API de OpenAI
@@ -429,10 +471,11 @@ Genera la redacción comercial perfecta ahora.";
         $resultado = llamar_openai($api_key, $model, $prompt, $system_instruction);
     } else {
         // Por defecto Google Gemini
-        $resultado = llamar_gemini($api_key, $model ?: 'gemini-2.0-flash', $prompt, $system_instruction);
+        $resultado = llamar_gemini($api_key, $model ?: 'gemini-3.8-flash', $prompt, $system_instruction);
     }
 
     if ($resultado['ok']) {
+        $actual_model = $resultado['model'] ?? $model;
         $texto = $resultado['text'];
         $asunto = '';
         if ($canal === 'email') {
@@ -444,7 +487,7 @@ Genera la redacción comercial perfecta ahora.";
             }
         }
 
-        $origen_str = $skill ? "IA ($provider) + Skill: " . $skill['nombre'] : "IA ($provider: $model)";
+        $origen_str = $skill ? "IA ($provider: $actual_model) + Skill: " . $skill['nombre'] : "IA ($provider: $actual_model)";
 
         return [
             'ok' => true,
