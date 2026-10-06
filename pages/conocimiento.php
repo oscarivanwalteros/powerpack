@@ -30,7 +30,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['restaurar_knowledge_b
     $mensaje_exito = 'Base de conocimiento restaurada con el catálogo y políticas oficiales de Power Pack.';
 }
 
+// Crear nueva Skill B2B
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['crear_skill'])) {
+    $codigo = strtolower(trim(preg_replace('/[^a-zA-Z0-9_]/', '_', $_POST['codigo'] ?? '')));
+    $nombre = trim($_POST['nombre'] ?? '');
+    $canal = trim($_POST['canal'] ?? 'ambos');
+    $desc = trim($_POST['descripcion'] ?? '');
+    $framework = trim($_POST['framework_prompt'] ?? '');
+    $ejemplo = trim($_POST['ejemplo_salida'] ?? '');
+    if ($codigo && $nombre && $framework) {
+        $stmt_sk = $db->prepare("INSERT INTO skills_ia (codigo, nombre, canal, categoria, descripcion, framework_prompt, ejemplo_salida, activo) VALUES (?, ?, ?, 'b2b_ventas', ?, ?, ?, 1)");
+        $stmt_sk->bindValue(1, $codigo, SQLITE3_TEXT);
+        $stmt_sk->bindValue(2, $nombre, SQLITE3_TEXT);
+        $stmt_sk->bindValue(3, $canal, SQLITE3_TEXT);
+        $stmt_sk->bindValue(4, $desc, SQLITE3_TEXT);
+        $stmt_sk->bindValue(5, $framework, SQLITE3_TEXT);
+        $stmt_sk->bindValue(6, $ejemplo, SQLITE3_TEXT);
+        $stmt_sk->execute();
+        $mensaje_exito = "Skill comercial '$nombre' creada e instalada con éxito.";
+    } else {
+        $mensaje_error = "Por favor completa el código, nombre y directrices de la skill.";
+    }
+}
+
+// Eliminar Skill
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['eliminar_skill'])) {
+    $sk_id = (int)($_POST['skill_id'] ?? 0);
+    if ($sk_id > 0) {
+        $db->exec("DELETE FROM skills_ia WHERE id = $sk_id");
+        $mensaje_exito = "Skill comercial eliminada correctamente.";
+    }
+}
+
 $ai_settings = get_ai_settings($db);
+$skills_list = $db->query("SELECT * FROM skills_ia ORDER BY id ASC");
 ?>
 
 <div class="page-header">
@@ -151,6 +184,21 @@ $ai_settings = get_ai_settings($db);
                         </select>
                     </div>
                     <div>
+                        <label style="font-size:11px;font-weight:700;color:var(--fg-secondary)">Skill B2B a Evaluar:</label>
+                        <select id="sim_skill" style="width:100%;padding:6px 10px;font-size:12px;font-weight:600">
+                            <option value="">— Sin Skill (Modo Estándar) —</option>
+                            <?php 
+                            $skills_list->reset();
+                            while($sk = $skills_list->fetchArray(SQLITE3_ASSOC)): 
+                            ?>
+                            <option value="<?= h($sk['codigo']) ?>"><?= h($sk['nombre']) ?></option>
+                            <?php endwhile; ?>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                    <div>
                         <label style="font-size:11px;font-weight:700;color:var(--fg-secondary)">Objetivo Comercial:</label>
                         <select id="sim_objetivo" style="width:100%;padding:6px 10px;font-size:12px">
                             <option value="seguimiento_feria">🎪 Seguimiento Post-Feria</option>
@@ -159,11 +207,10 @@ $ai_settings = get_ai_settings($db);
                             <option value="reactivacion">🧊 Reactivar Cliente Frío</option>
                         </select>
                     </div>
-                </div>
-
-                <div>
-                    <label style="font-size:11px;font-weight:700;color:var(--fg-secondary)">Instrucción o requerimiento del cliente:</label>
-                    <input type="text" id="sim_instrucciones" placeholder="Ej: Cliente interesado en empacar queso al vacío en bolsas de 500g..." value="Interesado en empacadora al vacío de campana para cárnicos" style="width:100%;font-size:12px">
+                    <div>
+                        <label style="font-size:11px;font-weight:700;color:var(--fg-secondary)">Instrucción del cliente:</label>
+                        <input type="text" id="sim_instrucciones" placeholder="Ej: Cliente interesado en empacar queso al vacío..." value="Interesado en empacadora al vacío de campana para cárnicos" style="width:100%;font-size:12px">
+                    </div>
                 </div>
 
                 <button type="button" onclick="ejecutarSimulacionIA()" class="btn btn-primary" id="btn-simular-ia" style="background:#2c60a4;padding:8px 16px;font-size:13px;font-weight:700">
@@ -221,6 +268,119 @@ $ai_settings = get_ai_settings($db);
         </form>
     </div>
 
+</div>
+
+<!-- ========================================================
+     SECCIÓN: CATÁLOGO DE SKILLS COMERCIALES B2B INSTALADAS
+     ======================================================== -->
+<div style="margin-top:32px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px">
+        <div>
+            <h2 style="margin:0;font-size:20px;color:#0f172a;display:flex;align-items:center;gap:10px">
+                <span>🎯</span> Skills Comerciales B2B Instaladas en Power Pack
+            </h2>
+            <p style="margin:4px 0 0 0;font-size:13px;color:var(--fg-secondary)">
+                Habilidades y marcos metodológicos de venta consultiva (AIDA, PAS, BAB, Magic Email) que dotan a la IA del criterio experto para redactar correos de alta conversión y mensajes ágiles de WhatsApp.
+            </p>
+        </div>
+        <button onclick="document.getElementById('modalNuevaSkill').style.display='flex'" class="btn btn-primary btn-sm" style="background:#2c60a4;font-weight:700">
+            ➕ Nueva Skill B2B
+        </button>
+    </div>
+
+    <!-- GRID DE SKILLS -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(360px, 1fr));gap:20px">
+        <?php 
+        $skills_list->reset();
+        while($sk = $skills_list->fetchArray(SQLITE3_ASSOC)): 
+            $canal_badge_cls = ($sk['canal'] === 'whatsapp') ? 'badge-calificado' : (($sk['canal'] === 'email') ? 'badge-contacto_inicial' : 'badge-lead');
+            $canal_label = ($sk['canal'] === 'whatsapp') ? '📱 WhatsApp' : (($sk['canal'] === 'email') ? '✉️ Correo Electrónico' : '🌐 WhatsApp & Correo');
+        ?>
+        <div class="card" style="display:flex;flex-direction:column;justify-content:space-between;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 2px 6px rgba(0,0,0,0.04);transition:transform 0.2s ease">
+            <div>
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+                    <span class="badge <?= $canal_badge_cls ?>" style="font-size:11px">
+                        <?= $canal_label ?>
+                    </span>
+                    <code style="font-size:11px;background:#f1f5f9;color:#2c60a4;padding:2px 6px;border-radius:4px"><?= h($sk['codigo']) ?></code>
+                </div>
+
+                <h3 style="margin:0 0 8px 0;font-size:15px;color:#0f172a;line-height:1.35">
+                    <?= h($sk['nombre']) ?>
+                </h3>
+
+                <div style="font-size:12px;color:#475569;line-height:1.5;margin-bottom:12px">
+                    <strong style="color:#0f172a">Función Comercial:</strong> <?= h($sk['descripcion']) ?>
+                </div>
+
+                <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:10px;font-size:11px;color:#334155;line-height:1.45;margin-bottom:12px">
+                    <strong style="color:#2c60a4">🧠 Marco Metodológico (Prompt):</strong><br>
+                    <?= nl2br(h($sk['framework_prompt'])) ?>
+                </div>
+            </div>
+
+            <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid #f1f5f9;padding-top:12px;margin-top:6px">
+                <button type="button" onclick="probarSkillDirecto('<?= $sk['canal']==='email'?'email':'whatsapp' ?>', '<?= h($sk['codigo']) ?>')" class="btn btn-secondary btn-sm" style="font-size:12px;font-weight:700">
+                    ⚡ Probar en Simulador
+                </button>
+                <form method="POST" style="margin:0" onsubmit="return confirm('¿Eliminar esta skill?');">
+                    <input type="hidden" name="eliminar_skill" value="1">
+                    <input type="hidden" name="skill_id" value="<?= (int)$sk['id'] ?>">
+                    <button type="submit" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:12px" title="Eliminar skill">🗑️</button>
+                </form>
+            </div>
+        </div>
+        <?php endwhile; ?>
+    </div>
+</div>
+
+<!-- MODAL NUEVA SKILL B2B -->
+<div id="modalNuevaSkill" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.65);z-index:9999;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(3px)">
+    <div style="background:#fff;border-radius:12px;max-width:580px;width:100%;box-shadow:0 20px 25px -5px rgba(0,0,0,0.2);overflow:hidden">
+        <div style="background:linear-gradient(135deg, #0f172a 0%, #1e293b 100%);padding:18px 24px;border-bottom:3px solid #2c60a4;display:flex;justify-content:space-between;align-items:center">
+            <h3 style="color:#fff;margin:0;font-size:16px;font-weight:800">➕ Crear Nueva Skill Comercial B2B</h3>
+            <button onclick="document.getElementById('modalNuevaSkill').style.display='none'" style="background:none;border:none;color:#94a3b8;font-size:22px;cursor:pointer">&times;</button>
+        </div>
+
+        <form method="POST" style="padding:22px;display:flex;flex-direction:column;gap:14px">
+            <input type="hidden" name="crear_skill" value="1">
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                <div>
+                    <label style="font-size:12px;font-weight:700">Código Único (slug):</label>
+                    <input type="text" name="codigo" required placeholder="ej: cierre_urgencia" style="width:100%;font-size:13px;margin-top:4px">
+                </div>
+                <div>
+                    <label style="font-size:12px;font-weight:700">Canal:</label>
+                    <select name="canal" style="width:100%;font-size:13px;padding:8px;margin-top:4px">
+                        <option value="ambos">Ambos (WhatsApp & Correo)</option>
+                        <option value="whatsapp">Solo WhatsApp</option>
+                        <option value="email">Solo Correo Electrónico</option>
+                    </select>
+                </div>
+            </div>
+
+            <div>
+                <label style="font-size:12px;font-weight:700">Nombre de la Skill:</label>
+                <input type="text" name="nombre" required placeholder="ej: 🚀 Fórmula Cierre: Descuento por Volumen" style="width:100%;font-size:13px;margin-top:4px">
+            </div>
+
+            <div>
+                <label style="font-size:12px;font-weight:700">Función Comercial (¿Qué logra y cuándo usarla?):</label>
+                <textarea name="descripcion" rows="2" required placeholder="Explica el objetivo de venta de esta habilidad..." style="width:100%;font-size:12px;margin-top:4px"></textarea>
+            </div>
+
+            <div>
+                <label style="font-size:12px;font-weight:700">Marco Metodológico / Prompt Directivo para la IA:</label>
+                <textarea name="framework_prompt" rows="4" required placeholder="Instruye a la IA sobre la estructura persuasiva a seguir..." style="width:100%;font-size:12px;margin-top:4px"></textarea>
+            </div>
+
+            <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:10px">
+                <button type="button" onclick="document.getElementById('modalNuevaSkill').style.display='none'" class="btn btn-secondary btn-sm">Cancelar</button>
+                <button type="submit" class="btn btn-primary btn-sm" style="background:#2c60a4;font-weight:800;padding:8px 20px">Guardar e Instalar Skill</button>
+            </div>
+        </form>
+    </div>
 </div>
 
 <script>
@@ -286,6 +446,7 @@ function ejecutarSimulacionIA() {
     var btn = document.getElementById('btn-simular-ia');
     var canal = document.getElementById('sim_canal').value;
     var objetivo = document.getElementById('sim_objetivo').value;
+    var skill = document.getElementById('sim_skill') ? document.getElementById('sim_skill').value : '';
     var inst = document.getElementById('sim_instrucciones').value;
     var box = document.getElementById('sim_resultado_box');
     var tag = document.getElementById('sim_origen_tag');
@@ -293,7 +454,7 @@ function ejecutarSimulacionIA() {
     var msgBox = document.getElementById('sim_mensaje_box');
 
     btn.disabled = true;
-    btn.innerText = '⚡ Generando redacción...';
+    btn.innerText = '⚡ Generando con Skill B2B...';
 
     fetch('api.php?action=generar_ia', {
         method: 'POST',
@@ -301,6 +462,7 @@ function ejecutarSimulacionIA() {
         body: JSON.stringify({
             canal: canal,
             objetivo: objetivo,
+            skill: skill,
             instrucciones: inst,
             prospecto_simulado: {
                 nombre: 'María Camila Ruiz',
@@ -332,6 +494,23 @@ function ejecutarSimulacionIA() {
         btn.innerText = '⚡ Generar Mensaje Asistido';
         alert('Error al simular: ' + err.message);
     });
+}
+
+function probarSkillDirecto(canal, codigo) {
+    if (document.getElementById('sim_canal')) {
+        document.getElementById('sim_canal').value = canal;
+    }
+    if (document.getElementById('sim_skill')) {
+        document.getElementById('sim_skill').value = codigo;
+    }
+    // Auto-ajustar objetivo según skill
+    if (document.getElementById('sim_objetivo')) {
+        if (codigo === 'aida_feria') document.getElementById('sim_objetivo').value = 'seguimiento_feria';
+        if (codigo === 'reactivacion_fria') document.getElementById('sim_objetivo').value = 'reactivacion';
+        if (codigo === 'invitacion_showroom') document.getElementById('sim_objetivo').value = 'agendar_visita';
+    }
+    window.scrollTo({ top: 350, behavior: 'smooth' });
+    ejecutarSimulacionIA();
 }
 
 function copiarSimulacion() {

@@ -142,6 +142,19 @@ $db->exec("CREATE TABLE IF NOT EXISTS usuarios (
     fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP
 )");
 
+$db->exec("CREATE TABLE IF NOT EXISTS skills_ia (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    codigo TEXT UNIQUE NOT NULL,
+    nombre TEXT NOT NULL,
+    canal TEXT DEFAULT 'ambos', -- 'email', 'whatsapp', 'ambos'
+    categoria TEXT DEFAULT 'b2b_ventas',
+    descripcion TEXT NOT NULL,
+    framework_prompt TEXT NOT NULL,
+    ejemplo_salida TEXT,
+    activo INTEGER DEFAULT 1,
+    fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP
+)");
+
 // Migraciones seguras para bases de datos existentes
 function agregar_columna_si_falta($db, $tabla, $columna, $tipo) {
     $res = $db->query("PRAGMA table_info($tabla)");
@@ -252,6 +265,79 @@ if ($db->querySingle("SELECT COUNT(*) FROM plantillas") == 0) {
         ('whatsapp', '4. Seguimiento comercial', '', 'Hola {nombre}, ¿cómo estás? Quería hacer un breve seguimiento para saber si lograste revisar la propuesta para {empresa} o si tienes alguna inquietud que podamos resolver.'),
         ('email', 'Propuesta Comercial y Ficha Técnica', 'Propuesta de optimización para {empresa}', '<p>Estimado/a <strong>{nombre}</strong>,</p><p>Es un placer saludarte de parte de <strong>{empresa_nombre}</strong>.</p><p>Analizando las necesidades de <strong>{empresa}</strong> en el sector {sector}, hemos preparado una propuesta especializada que permite automatizar y optimizar los tiempos de producción y despacho hasta en un 35%.</p><p>Quedamos atentos a tus comentarios para coordinar una breve reunión técnica o llamada de seguimiento.</p><p>Cordialmente,<br><strong>Equipo Comercial</strong><br>{empresa_nombre}<br>{empresa_telefono}</p>')
     ");
+}
+
+// Skills de IA Especializadas en Ventas B2B
+if ($db->querySingle("SELECT COUNT(*) FROM skills_ia") == 0) {
+    $stmt_skill = $db->prepare("INSERT INTO skills_ia (codigo, nombre, canal, categoria, descripcion, framework_prompt, ejemplo_salida, activo) VALUES (?, ?, ?, ?, ?, ?, ?, 1)");
+    
+    $skills_seed = [
+        [
+            'aida_feria',
+            '🎯 Fórmula AIDA: Seguimiento Post-Feria y Eventos B2B',
+            'ambos',
+            'b2b_ventas',
+            'Convierte contactos de ferias industriales (Andina Pack, Alimentec, etc.) en cotizaciones. Capta Atención recordando el stand, despierta Interés en reducir mermas, genera Deseo con garantía de 12 meses y stock en Bogotá, y mueve a la Acción con una llamada de 10 min.',
+            'Aplica la metodología AIDA para venta consultiva industrial B2B. 1) Atención: Menciona con calidez que se conocieron en la feria comercial o evento. 2) Interés: Demuestra entendimiento de sus procesos de empaque o dosificado y la necesidad de aumentar rendimiento. 3) Deseo: Presenta a Power Pack como aliado con máquinas en acero inoxidable, bombas de vacío de alto rendimiento y stock de entrega inmediata con garantía de 1 año. 4) Acción: Invita a coordinar una videollamada de 10 min o solicita confirmación para enviar la cotización formal.',
+            "Hola {nombre}, un gusto saludarte. Recordando la conversación en la feria sobre la línea de producción de {empresa}..."
+        ],
+        [
+            'pas_problema',
+            '⚡ Fórmula PAS: Problema, Agitación y Solución Industrial',
+            'ambos',
+            'b2b_ventas',
+            'Para prospectos con procesos manuales lentos o fallas en empaque. Identifica el Problema (mermas, sellos defectuosos, lentitud), Agita el costo oculto de paradas o quejas, y ofrece la Solución exacta de Power Pack con rápido retorno de inversión.',
+            'Aplica el marco PAS (Problem - Agitate - Solution) para directores de planta y compras. 1) Problema: Señala los cuellos de botella habituales en empaque manual o maquinaria descalibrada. 2) Agitación: Expone las mermas económicas y retrasos de entrega que esto causa. 3) Solución: Presenta el equipo de Power Pack como la solución definitiva con precisión milimétrica, repuestos inmediatos y soporte técnico en Colombia.',
+            "Estimado {nombre}, muchas empresas del sector alimenticio pierden hasta un 12% en mermas por empaques defectuosos..."
+        ],
+        [
+            'bab_transformacion',
+            '🏭 Fórmula BAB: Transformación y Eficiencia (Before - After - Bridge)',
+            'ambos',
+            'b2b_ventas',
+            'Contrasta el Antes (planta operando con fricción y lentitud) con el Después (planta moderna empacando al triple de velocidad con acabado hermético), posicionando a Power Pack como el Puente tecnológico de confianza.',
+            'Aplica el marco BAB (Before - After - Bridge). 1) Before: Describe la fricción de procesos semi-manuales con altos tiempos por lote. 2) After: Proyecta la planta trabajando al triple de velocidad con acabado hermético y fecha de vencimiento clara. 3) Bridge: Muestra la maquinaria Power Pack con inducción a operarios y facilidades de pago como el puente directo a esa transformación.',
+            "¿Cómo sería triplicar la velocidad de sellado en {empresa} sin incrementar horas extra operativas?..."
+        ],
+        [
+            'reactivacion_fria',
+            '🧊 Magic Email: Reactivación de Prospectos Inactivos (No Responde)',
+            'ambos',
+            'b2b_ventas',
+            'Para cotizaciones congeladas o clientes que dejaron de responder. Usa psicología de cortesía profesional para reabrir la conversación o confirmar con elegancia si se archiva el proyecto.',
+            'Aplica la técnica de reactivación cordial de ciclo comercial. El tono debe ser 100% respetuoso y profesional, sin sonar insistente. Pregunta de forma directa y sincera si sus prioridades en la línea de empaque cambiaron, o si prefieren que archivemos la propuesta por el momento para no saturar su bandeja. Incluye una breve nota de que los precios o cupos de entrega inmediata se mantienen reservados por cortesía hasta fin de mes.',
+            "Hola {nombre}, te escribo brevemente. Imagino que están con mucha carga en planta. ¿Aún sigue en pie el proyecto de empaque para {empresa} o prefieres que pausemos la propuesta?..."
+        ],
+        [
+            'invitacion_showroom',
+            '🏢 Invitación VIP a Showroom Bogotá: Pruebas con Muestras Reales',
+            'ambos',
+            'b2b_ventas',
+            'Estrategia de alta conversión para clientes exigentes. Los invita al Showroom de Power Pack en Bogotá (Calle 161 # 54 - 25) a probar la máquina en vivo con su producto real sin costo alguno.',
+            'El objetivo es cerrar una cita presencial o envío de muestras al Showroom de Power Pack en Bogotá (Calle 161 # 54 - 25). Explica que la mejor garantía es ver la máquina sellando, empacando al vacío o dosificando con su producto real. Es una prueba técnica sin compromiso guiada por nuestros ingenieros para validar velocidad y presentación.',
+            "Estimado {nombre}, queremos invitarte a nuestro Showroom en Bogotá para hacer pruebas reales con tus muestras..."
+        ],
+        [
+            'flash_whatsapp',
+            '📱 WhatsApp Flash B2B: Mensaje Ejecutivo Ultraligero (Directo al Grano)',
+            'whatsapp',
+            'b2b_ventas',
+            'Mensaje quirúrgico de máximo 3 o 4 párrafos cortos para WhatsApp. Diseñado para gerentes ocupados que revisan el celular entre reuniones. Con formato nítido y 1 sola pregunta concreta.',
+            'Genera un mensaje de WhatsApp móvil ultra-directo. No exceder 75 palabras. Saludo formal con nombre de pila, 2 frases de valor comercial sobre la máquina ideal para su empresa, mención rápida de stock para entrega inmediata en Colombia con garantía de 1 año, y un llamado a la acción simple que se responda con Sí o No. Usa asteriscos para negritas.',
+            "¡Hola {nombre}! 👋 Te saluda Power Pack. Vimos su producción en {empresa} y tenemos selladoras al vacío en stock en Bogotá con 1 año de garantía. ¿Te queda bien que te comparta la ficha técnica en PDF por aquí?"
+        ]
+    ];
+
+    foreach ($skills_seed as $s) {
+        $stmt_skill->bindValue(1, $s[0], SQLITE3_TEXT);
+        $stmt_skill->bindValue(2, $s[1], SQLITE3_TEXT);
+        $stmt_skill->bindValue(3, $s[2], SQLITE3_TEXT);
+        $stmt_skill->bindValue(4, $s[3], SQLITE3_TEXT);
+        $stmt_skill->bindValue(5, $s[4], SQLITE3_TEXT);
+        $stmt_skill->bindValue(6, $s[5], SQLITE3_TEXT);
+        $stmt_skill->bindValue(7, $s[6], SQLITE3_TEXT);
+        $stmt_skill->execute();
+    }
 }
 
 // Helpers de formato y utilidad

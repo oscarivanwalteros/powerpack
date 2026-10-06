@@ -19,6 +19,11 @@ $archivos_contacto = $db->query("SELECT * FROM archivos WHERE contacto_id = $id 
 $plantillas_wa = $db->query("SELECT * FROM plantillas WHERE tipo = 'whatsapp'");
 $plantillas_email = $db->query("SELECT * FROM plantillas WHERE tipo = 'email'");
 
+require_once __DIR__ . '/../ai.php';
+$skills_wa = get_active_skills($db, 'whatsapp');
+$skills_email = get_active_skills($db, 'email');
+$todas_skills = get_active_skills($db, 'ambos');
+
 $clean_tel = limpiar_telefono_whatsapp($c['telefono']);
 ?>
 
@@ -252,6 +257,29 @@ $clean_tel = limpiar_telefono_whatsapp($c['telefono']);
                                 </select>
                             </div>
                         </div>
+
+                        <!-- BARRA GENERADOR RÁPIDO CON SKILL B2B (AUTO-PEGADO) -->
+                        <div style="background:linear-gradient(135deg, #f0fdf4 0%, #eff6ff 100%);border:1px solid #bfdbfe;border-radius:8px;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+                            <div style="display:flex;align-items:center;gap:8px">
+                                <span style="font-size:18px">⚡</span>
+                                <div>
+                                    <strong style="font-size:12px;color:#1e3a8a">Generar con Skill B2B:</strong>
+                                    <span style="font-size:11px;color:#64748b;display:block">Redacta y pega automáticamente en el cuadro de WhatsApp</span>
+                                </div>
+                            </div>
+                            <div style="display:flex;align-items:center;gap:8px;flex:1;justify-content:flex-end;min-width:260px">
+                                <select id="quick_skill_wa" style="font-size:12px;padding:6px 10px;border-radius:6px;border:1px solid #93c5fd;background:#fff;font-weight:600;max-width:320px">
+                                    <?php foreach($skills_wa as $sk): ?>
+                                    <option value="<?= h($sk['codigo']) ?>"><?= h($sk['nombre']) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <button type="button" onclick="generarYPegar('whatsapp')" id="btn-quick-wa" class="btn btn-sm" style="background:#2c60a4;color:#fff;font-weight:800;padding:7px 14px;white-space:nowrap;box-shadow:0 2px 4px rgba(44,96,164,0.25)">
+                                    ⚡ Generar y Pegar
+                                </button>
+                            </div>
+                            <div id="quick_status_wa" style="width:100%;display:none;font-size:11px;padding:5px 8px;border-radius:4px;font-weight:700"></div>
+                        </div>
+
                         <div class="form-group">
                             <label>Mensaje de WhatsApp</label>
                             <textarea name="mensaje" id="wa_mensaje" rows="4" required placeholder="Escribe el mensaje o selecciona una plantilla arriba..."><?= h(reemplazar_variables("¡Hola {nombre}! Un gusto saludarte de parte de {empresa_nombre}. Vimos lo que hacen en {empresa}. ¿Cómo están optimizando actualmente sus procesos?", $c, $config)) ?></textarea>
@@ -293,6 +321,29 @@ $clean_tel = limpiar_telefono_whatsapp($c['telefono']);
                                 </select>
                             </div>
                         </div>
+
+                        <!-- BARRA GENERADOR RÁPIDO CON SKILL B2B (AUTO-PEGADO EN CORREO) -->
+                        <div style="background:linear-gradient(135deg, #f0fdf4 0%, #eff6ff 100%);border:1px solid #bfdbfe;border-radius:8px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+                            <div style="display:flex;align-items:center;gap:8px">
+                                <span style="font-size:18px">⚡</span>
+                                <div>
+                                    <strong style="font-size:12px;color:#1e3a8a">Generar Correo con Skill B2B:</strong>
+                                    <span style="font-size:11px;color:#64748b;display:block">Redacta asunto y propuesta persuasiva y los pega automáticamente</span>
+                                </div>
+                            </div>
+                            <div style="display:flex;align-items:center;gap:8px;flex:1;justify-content:flex-end;min-width:260px">
+                                <select id="quick_skill_email" style="font-size:12px;padding:6px 10px;border-radius:6px;border:1px solid #93c5fd;background:#fff;font-weight:600;max-width:320px">
+                                    <?php foreach($skills_email as $sk): ?>
+                                    <option value="<?= h($sk['codigo']) ?>"><?= h($sk['nombre']) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <button type="button" onclick="generarYPegar('email')" id="btn-quick-email" class="btn btn-sm" style="background:#2c60a4;color:#fff;font-weight:800;padding:7px 14px;white-space:nowrap;box-shadow:0 2px 4px rgba(44,96,164,0.25)">
+                                    ⚡ Generar y Pegar en Correo
+                                </button>
+                            </div>
+                            <div id="quick_status_email" style="width:100%;display:none;font-size:11px;padding:5px 8px;border-radius:4px;font-weight:700"></div>
+                        </div>
+
                         <div class="form-group">
                             <label>Asunto del Correo</label>
                             <input type="text" name="asunto" id="email_asunto" value="<?= h(reemplazar_variables("Propuesta y Soluciones de Automatización para {empresa}", $c, $config)) ?>" required>
@@ -597,9 +648,97 @@ function confirmarEliminar() {
     }
 }
 
-// FUNCIONES DEL COPILOTO IA POWER PACK
+// FUNCIONES DEL COPILOTO IA POWER PACK & SKILLS B2B
 var ultimoTextoIA = '';
 var ultimoAsuntoIA = '';
+
+// Función 1-Click: Generar con Skill B2B y Pegar Automáticamente en el Editor
+function generarYPegar(canal) {
+    var skill = (canal === 'whatsapp') 
+        ? document.getElementById('quick_skill_wa').value 
+        : document.getElementById('quick_skill_email').value;
+    var btn = (canal === 'whatsapp') ? document.getElementById('btn-quick-wa') : document.getElementById('btn-quick-email');
+    var statusDiv = (canal === 'whatsapp') ? document.getElementById('quick_status_wa') : document.getElementById('quick_status_email');
+
+    btn.disabled = true;
+    var origText = btn.innerHTML;
+    btn.innerHTML = '⚡ Generando con Skill...';
+    statusDiv.style.display = 'block';
+    statusDiv.style.background = '#eff6ff';
+    statusDiv.style.color = '#1e40af';
+    statusDiv.innerText = 'Consultando base de conocimiento de Power Pack y redactando con la IA...';
+
+    // Determinar objetivo comercial según skill
+    var obj = 'seguimiento_feria';
+    if (skill === 'pas_problema' || skill === 'bab_transformacion') obj = 'propuesta';
+    if (skill === 'reactivacion_fria') obj = 'reactivacion';
+    if (skill === 'invitacion_showroom') obj = 'agendar_visita';
+
+    fetch('api.php?action=generar_ia', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            contacto_id: <?= (int)$c['id'] ?>,
+            canal: canal,
+            skill: skill,
+            objetivo: obj
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        btn.disabled = false;
+        btn.innerHTML = origText;
+
+        if (data.ok) {
+            if (canal === 'whatsapp') {
+                var waField = document.getElementById('wa_mensaje');
+                waField.value = data.mensaje;
+                waField.style.borderColor = '#059669';
+                waField.style.boxShadow = '0 0 0 3px rgba(5,150,105,0.25)';
+                setTimeout(() => {
+                    waField.style.borderColor = '';
+                    waField.style.boxShadow = '';
+                }, 1800);
+            } else {
+                if (data.asunto) {
+                    var asuntoField = document.getElementById('email_asunto');
+                    asuntoField.value = data.asunto;
+                    asuntoField.style.borderColor = '#059669';
+                    asuntoField.style.boxShadow = '0 0 0 3px rgba(5,150,105,0.25)';
+                    setTimeout(() => {
+                        asuntoField.style.borderColor = '';
+                        asuntoField.style.boxShadow = '';
+                    }, 1800);
+                }
+                var cleanBody = data.mensaje.replace(/<br\s*[\/]?>/gi, "\n").replace(/<p>/gi, '').replace(/<\/p>/gi, "\n\n").replace(/<li>/gi, "• ").replace(/<\/li>/gi, "\n").replace(/<[^>]+>/g, '').trim();
+                var emailField = document.getElementById('email_cuerpo');
+                emailField.value = cleanBody;
+                emailField.style.borderColor = '#059669';
+                emailField.style.boxShadow = '0 0 0 3px rgba(5,150,105,0.25)';
+                setTimeout(() => {
+                    emailField.style.borderColor = '';
+                    emailField.style.boxShadow = '';
+                }, 1800);
+            }
+
+            statusDiv.style.background = '#ecfdf5';
+            statusDiv.style.color = '#065f46';
+            statusDiv.innerHTML = '✅ <strong>¡Redacción generada y pegada automáticamente!</strong> <span style="font-size:10px;color:#047857">(' + (data.origen || 'Power Pack AI') + ')</span>';
+            setTimeout(() => { statusDiv.style.display = 'none'; }, 6500);
+        } else {
+            statusDiv.style.background = '#fef2f2';
+            statusDiv.style.color = '#991b1b';
+            statusDiv.innerText = '⚠️ Error al generar: ' + (data.error || 'No se pudo conectar.');
+        }
+    })
+    .catch(err => {
+        btn.disabled = false;
+        btn.innerHTML = origText;
+        statusDiv.style.background = '#fef2f2';
+        statusDiv.style.color = '#991b1b';
+        statusDiv.innerText = '⚠️ Error de conexión: ' + err.message;
+    });
+}
 
 function abrirModalIA(canal) {
     if (canal) {
@@ -612,6 +751,7 @@ function generarTextoIA() {
     var btn = document.getElementById('btn-generar-ia');
     var canal = document.getElementById('ia_canal').value;
     var objetivo = document.getElementById('ia_objetivo').value;
+    var skill = document.getElementById('ia_skill').value;
     var inst = document.getElementById('ia_instrucciones').value;
     var box = document.getElementById('ia_resultado_box');
     var tag = document.getElementById('ia_origen_tag');
@@ -619,7 +759,7 @@ function generarTextoIA() {
     var msgBox = document.getElementById('ia_mensaje_box');
 
     btn.disabled = true;
-    btn.innerText = '⚡ Consultando Repositorio y Redactando...';
+    btn.innerText = '⚡ Consultando Repositorio y Redactando con IA...';
 
     fetch('api.php?action=generar_ia', {
         method: 'POST',
@@ -627,6 +767,7 @@ function generarTextoIA() {
         body: JSON.stringify({
             contacto_id: <?= (int)$c['id'] ?>,
             canal: canal,
+            skill: skill,
             objetivo: objetivo,
             instrucciones: inst
         })
@@ -686,13 +827,13 @@ function copiarTextoIA() {
 
 <!-- MODAL COPILOTO IA POWER PACK -->
 <div id="modalCopilotoIA" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.65);z-index:9999;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(3px)">
-    <div style="background:#fff;border-radius:12px;max-width:640px;width:100%;box-shadow:0 20px 25px -5px rgba(0,0,0,0.2);overflow:hidden">
+    <div style="background:#fff;border-radius:12px;max-width:660px;width:100%;box-shadow:0 20px 25px -5px rgba(0,0,0,0.2);overflow:hidden">
         <div style="background:linear-gradient(135deg, #0f172a 0%, #1e293b 100%);padding:18px 24px;border-bottom:3px solid #2c60a4;display:flex;justify-content:space-between;align-items:center">
             <div style="display:flex;align-items:center;gap:10px">
                 <span style="font-size:22px">✨</span>
                 <div>
                     <h3 style="color:#fff;margin:0;font-size:16px;font-weight:800">Copiloto IA Power Pack</h3>
-                    <div style="color:#94a3b8;font-size:11px">Redacción comercial asistida con la Base de Conocimiento de la empresa</div>
+                    <div style="color:#94a3b8;font-size:11px">Redacción comercial asistida con Skills B2B y Base de Conocimiento</div>
                 </div>
             </div>
             <button onclick="document.getElementById('modalCopilotoIA').style.display='none'" style="background:none;border:none;color:#94a3b8;font-size:22px;cursor:pointer">&times;</button>
@@ -701,30 +842,40 @@ function copiarTextoIA() {
         <div style="padding:22px;display:flex;flex-direction:column;gap:14px">
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
                 <div>
-                    <label style="font-size:12px;font-weight:700">Canal:</label>
-                    <select id="ia_canal" style="width:100%;padding:8px 10px;font-size:13px;margin-top:4px">
+                    <label style="font-size:12px;font-weight:700">Canal Destino:</label>
+                    <select id="ia_canal" style="width:100%;padding:8px 10px;font-size:13px;margin-top:4px;font-weight:600">
                         <option value="whatsapp">📱 Mensaje de WhatsApp</option>
                         <option value="email">✉️ Correo Electrónico Formal</option>
                     </select>
                 </div>
                 <div>
-                    <label style="font-size:12px;font-weight:700">Objetivo Comercial:</label>
-                    <select id="ia_objetivo" style="width:100%;padding:8px 10px;font-size:13px;margin-top:4px">
-                        <option value="seguimiento_feria">🎪 Seguimiento Post-Feria</option>
-                        <option value="primer_contacto">🤝 Presentación Comercial Inicial</option>
-                        <option value="propuesta">📄 Presentación de Cotización / Maquinaria</option>
-                        <option value="agendar_visita">🏢 Invitar al Showroom en Bogotá</option>
-                        <option value="reactivacion">🧊 Reactivar Cliente sin respuesta</option>
+                    <label style="font-size:12px;font-weight:700">Skill B2B Especializada:</label>
+                    <select id="ia_skill" style="width:100%;padding:8px 10px;font-size:13px;margin-top:4px;font-weight:600">
+                        <option value="">— Seleccionar Skill B2B —</option>
+                        <?php foreach($todas_skills as $sk): ?>
+                        <option value="<?= h($sk['codigo']) ?>"><?= h($sk['nombre']) ?></option>
+                        <?php endforeach; ?>
                     </select>
                 </div>
             </div>
 
             <div>
-                <label style="font-size:12px;font-weight:700">Instrucciones o requerimiento del cliente (Opcional):</label>
-                <input type="text" id="ia_instrucciones" placeholder="Ej: Mencionar que tenemos entrega inmediata y 1 año de garantía..." style="width:100%;margin-top:4px;font-size:13px">
+                <label style="font-size:12px;font-weight:700">Objetivo Comercial Base:</label>
+                <select id="ia_objetivo" style="width:100%;padding:8px 10px;font-size:13px;margin-top:4px">
+                    <option value="seguimiento_feria">🎪 Seguimiento Post-Feria</option>
+                    <option value="primer_contacto">🤝 Presentación Comercial Inicial</option>
+                    <option value="propuesta">📄 Presentación de Cotización / Maquinaria</option>
+                    <option value="agendar_visita">🏢 Invitar al Showroom en Bogotá</option>
+                    <option value="reactivacion">🧊 Reactivar Cliente sin respuesta</option>
+                </select>
             </div>
 
-            <button type="button" onclick="generarTextoIA()" class="btn btn-primary" id="btn-generar-ia" style="background:#2c60a4;padding:10px 20px;font-size:13px;font-weight:800;width:100%">
+            <div>
+                <label style="font-size:12px;font-weight:700">Instrucciones o detalles adicionales del asesor (Opcional):</label>
+                <input type="text" id="ia_instrucciones" placeholder="Ej: Destacar entrega inmediata y preguntar por volumen diario..." style="width:100%;margin-top:4px;font-size:13px">
+            </div>
+
+            <button type="button" onclick="generarTextoIA()" class="btn btn-primary" id="btn-generar-ia" style="background:#2c60a4;padding:11px 20px;font-size:14px;font-weight:800;width:100%">
                 ⚡ Generar Redacción Asistida con IA
             </button>
 
@@ -739,7 +890,7 @@ function copiarTextoIA() {
 
                 <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:14px">
                     <button type="button" onclick="aplicarAlEditor()" class="btn btn-primary btn-sm" style="background:#059669;font-weight:800;padding:8px 18px">
-                        ✅ Cargar en el Editor y Cerrar
+                        ✅ Pegar en el Editor y Cerrar
                     </button>
                 </div>
             </div>

@@ -87,6 +87,33 @@ function get_ai_settings($db) {
     ];
 }
 
+// Obtener catálogo de Skills B2B activas
+function get_active_skills($db, $canal = 'ambos') {
+    if ($canal === 'ambos') {
+        $res = $db->query("SELECT * FROM skills_ia WHERE activo = 1 ORDER BY id ASC");
+    } else {
+        $stmt = $db->prepare("SELECT * FROM skills_ia WHERE activo = 1 AND (canal = ? OR canal = 'ambos') ORDER BY id ASC");
+        $stmt->bindValue(1, $canal, SQLITE3_TEXT);
+        $res = $stmt->execute();
+    }
+    $skills = [];
+    if ($res) {
+        while ($row = $res->fetchArray(SQLITE3_ASSOC)) {
+            $skills[] = $row;
+        }
+    }
+    return $skills;
+}
+
+// Obtener una Skill B2B por código
+function get_skill_by_code($db, $codigo) {
+    if (empty($codigo)) return null;
+    $stmt = $db->prepare("SELECT * FROM skills_ia WHERE codigo = ? LIMIT 1");
+    $stmt->bindValue(1, $codigo, SQLITE3_TEXT);
+    $res = $stmt->execute()->fetchArray(SQLITE3_ASSOC);
+    return $res ?: null;
+}
+
 // Cliente HTTP universal para Hostinger (soporta curl o stream_context)
 function ai_http_post($url, $headers, $payload_json, $timeout = 18) {
     if (function_exists('curl_init')) {
@@ -206,7 +233,7 @@ function llamar_openai($api_key, $model, $prompt, $system_instruction) {
 }
 
 // Motor Heurístico de Respaldo (Funciona 100% offline sin API Key)
-function motor_redaccion_offline($contacto, $canal, $objetivo, $instrucciones_extra, $knowledge) {
+function motor_redaccion_offline($contacto, $canal, $objetivo, $instrucciones_extra, $knowledge, $skill_codigo = '') {
     $nombre = trim(($contacto['nombre'] ?? '') . ' ' . ($contacto['apellido'] ?? '')) ?: 'Estimado Cliente';
     $empresa = trim($contacto['empresa'] ?? '');
     $fuente = trim($contacto['fuente'] ?? 'Feria Comercial');
@@ -214,78 +241,136 @@ function motor_redaccion_offline($contacto, $canal, $objetivo, $instrucciones_ex
     $ciudad = trim($contacto['ciudad'] ?? 'Bogotá');
     $emp_str = $empresa ? " de $empresa" : "";
 
-    if ($canal === 'whatsapp') {
-        if ($objetivo === 'seguimiento_feria') {
+    // 1. Manejo específico por Skill B2B
+    if ($skill_codigo === 'aida_feria' || $objetivo === 'seguimiento_feria') {
+        if ($canal === 'whatsapp') {
             $msg = "¡Hola, $nombre! 👋 Te saluda el equipo de *Power Pack*.\n\nFue un gusto conocerte en nuestro stand de *$fuente* 🎪. Estuvimos revisando tus requerimientos de empaque" . ($notas ? " (*$notas*)" : "") . " para $empresa y queremos brindarte la asesoría técnica que necesitas para optimizar tu producción.\n\nContamos con equipos para entrega inmediata y 1 año de garantía técnica. ¿Te parecería si te envío la ficha técnica y cotización formal por este medio o prefieres que conversemos 5 minutos por llamada? Quedo muy atento. ¡Feliz día! ⚡";
-        } elseif ($objetivo === 'propuesta') {
-            $msg = "Hola, $nombre. Un gusto saludarte desde *Power Pack* ⚡.\n\nYa tenemos lista la propuesta técnica y comercial de la maquinaria que estuvimos conversando" . ($empresa ? " para $empresa" : "") . ". Nuestros equipos cuentan con garantía de 12 meses, respaldo de repuestos en Bogotá y despacho seguro a $ciudad.\n\n¿Tienes disponibilidad para revisarla hoy o prefieres que coordinemos una videollamada demostrativa de la máquina? 📄";
-        } elseif ($objetivo === 'reactivacion') {
-            $msg = "Hola, $nombre, ¿cómo estás? Te saluda nuevamente el equipo técnico de *Power Pack*.\n\nQueríamos consultarte cómo avanzaron con el proyecto de empaque y maquinaria" . ($empresa ? " en $empresa" : "") . ". Nos llegaron nuevos lotes con entrega inmediata y descuentos especiales de cierre de mes. ¿Aún están evaluando la solución para su línea? Saludos cordiales. 🤝";
-        } elseif ($objetivo === 'agendar_visita') {
-            $msg = "¡Hola, $nombre! 👋 Desde *Power Pack* queremos extenderte una invitación especial a nuestro Showroom en Bogotá (Calle 161 # 54 - 25).\n\nPuedes traer muestras reales de tu producto para realizar pruebas de empaque, sellado y dosificado en vivo sin ningún compromiso. ¿Qué día de esta semana te quedaría cómodo visitarnos? 🏢";
+            return ['ok' => true, 'asunto' => '', 'mensaje' => $msg . ($instrucciones_extra ? "\n\n📌 *Nota:* $instrucciones_extra" : ''), 'origen' => 'Skill B2B: Fórmula AIDA Feria (Motor Power Pack)'];
         } else {
-            $msg = "¡Hola, $nombre! 👋 Te saludamos de *Power Pack*, especialistas en maquinaria de empaque y dosificado en Colombia.\n\nNos ponemos en contacto" . ($empresa ? " con $empresa" : "") . " para apoyarte en la automatización de su línea de producción" . ($notas ? " respecto a: $notas" : "") . ".\n\n¿En qué podemos colaborarte hoy? Quedamos a tu completa disposición.";
-        }
-
-        if (!empty($instrucciones_extra)) {
-            $msg .= "\n\n📌 *Nota adicional:* " . $instrucciones_extra;
-        }
-
-        return [
-            'ok' => true,
-            'asunto' => '',
-            'mensaje' => $msg,
-            'origen' => 'Motor Inteligente Power Pack'
-        ];
-    } else {
-        // Redacción de Correo Electrónico
-        if ($objetivo === 'seguimiento_feria') {
-            $asunto = "Seguimiento $fuente | Asesoría en Maquinaria de Empaque - Power Pack";
+            $asunto = "Seguimiento $fuente | Asesoría en Maquinaria de Empaque para $empresa - Power Pack";
             $cuerpo = "<p>Estimado(a) <strong>$nombre</strong>$emp_str,</p>
             <p>Es un placer saludarte. En nombre de <strong>Power Pack</strong>, queremos agradecerte por haber visitado nuestro stand durante la <strong>$fuente</strong>.</p>
             <p>De acuerdo con la conversación que sostuvimos en el evento, estuvimos analizando los requerimientos de tu empresa" . ($notas ? " (<em>$notas</em>)" : "") . ". Nuestro objetivo es brindarte una solución integral que permita incrementar la velocidad de tu proceso de empaque, reducir mermas y garantizar la máxima vida útil de tu producto.</p>
             <p><strong>Beneficios clave que te ofrecemos en Power Pack:</strong></p>
             <ul>
                 <li><strong>Garantía de 12 meses:</strong> En estructura y componentes mecánicos contra todo defecto de fabricación.</li>
-                <li><strong>Entrega y Despacho:</strong> Equipos disponibles en stock para despacho inmediato a $ciudad y todo el territorio nacional.</li>
-                <li><strong>Soporte y Repuestos:</strong> Centro de servicio técnico especializado y disponibilidad de repuestos originales en Colombia.</li>
+                <li><strong>Entrega y Despacho:</strong> Equipos disponibles en stock para despacho inmediato a $ciudad y todo el país.</li>
+                <li><strong>Soporte y Repuestos:</strong> Centro de servicio técnico especializado y disponibilidad de repuestos originales en Bogotá.</li>
                 <li><strong>Capacitación incluida:</strong> Inducción operativa y acompañamiento en la puesta en marcha.</li>
             </ul>" . (!empty($instrucciones_extra) ? "<p><strong>Observación técnica:</strong> $instrucciones_extra</p>" : "") . "
             <p>Nos gustaría coordinar una breve llamada de 10 minutos o invitarte a nuestro showroom en Bogotá (Calle 161 # 54 - 25) para que puedas ver los equipos operando con tus muestras reales.</p>
             <p>Quedamos atentos a tus comentarios para enviarte la propuesta formal.</p>
             <p>Cordialmente,<br><strong>Departamento Comercial & Soluciones Industriales</strong><br>Power Pack • www.powerpack.com.co<br>Tel / WhatsApp: +57 300 467 0474</p>";
-        } else {
-            $asunto = "Propuesta Comercial & Soluciones de Empaque | Power Pack";
-            $cuerpo = "<p>Estimado(a) <strong>$nombre</strong>$emp_str,</p>
-            <p>Esperamos que te encuentres muy bien. Te escribimos desde <strong>Power Pack</strong> con el propósito de dar respuesta a tu solicitud de maquinaria y tecnología de empaque industrial.</p>
-            <p>Contamos con una amplia trayectoria asesorando plantas de alimentos, agroindustria y manufactura en Colombia, equipándolas con selladoras al vacío, dosificadoras de alta precisión, selladoras continuas y sistemas de codificación inkjet.</p>
-            " . ($notas ? "<p>En atención a tus necesidades especificadas: <em>$notas</em>, hemos preparado la configuración técnica más adecuada para tu volumen de producción.</p>" : "") . "
-            " . (!empty($instrucciones_extra) ? "<p><strong>Nota técnica:</strong> $instrucciones_extra</p>" : "") . "
-            <p>Todos nuestros equipos cuentan con 1 año de garantía, soporte técnico directo y despacho a $ciudad.</p>
-            <p>Agradecemos nos indiques tu disponibilidad para contactarte y enviarte los detalles técnicos y económicos.</p>
-            <p>Atentamente,<br><strong>Equipo Comercial Power Pack</strong><br>Calle 161 # 54 - 25, Bogotá, Colombia • Tel: +57 300 467 0474</p>";
+            return ['ok' => true, 'asunto' => $asunto, 'mensaje' => $cuerpo, 'origen' => 'Skill B2B: Fórmula AIDA Feria (Motor Power Pack)'];
         }
+    }
 
-        return [
-            'ok' => true,
-            'asunto' => $asunto,
-            'mensaje' => $cuerpo,
-            'origen' => 'Motor Inteligente Power Pack'
-        ];
+    if ($skill_codigo === 'pas_problema') {
+        if ($canal === 'whatsapp') {
+            $msg = "Hola, $nombre. Te saludamos desde *Power Pack* ⚡.\n\nSabemos que en la industria los cuellos de botella en empaque manual o fugas de sellado generan mermas invisibles y retrasos costosos en bodega.\n\nNuestras selladoras y dosificadoras industriales eliminan ese fallo con precisión garantizada, repuestos en Bogotá y 12 meses de garantía. ¿Te gustaría que evaluemos el equipo ideal para la línea de $empresa? 📄";
+            return ['ok' => true, 'asunto' => '', 'mensaje' => $msg . ($instrucciones_extra ? "\n\n📌 *Nota:* $instrucciones_extra" : ''), 'origen' => 'Skill B2B: Fórmula PAS Problema (Motor Power Pack)'];
+        } else {
+            $asunto = "Optimización y Eliminación de Mermas de Empaque en $empresa | Power Pack";
+            $cuerpo = "<p>Estimado(a) <strong>$nombre</strong>$emp_str,</p>
+            <p>Un cordial saludo de parte de <strong>Power Pack</strong>.</p>
+            <p>En el sector productivo de $empresa, procesos como el sellado manual o equipos descalibrados suelen causar <strong>mermas de producto, paradas inesperadas y reclamos por pérdida de vacío</strong>, lo que encarece directamente el costo por unidad empacada.</p>
+            <p>En Power Pack diseñamos e importamos maquinaria con <strong>bombas de alto vacío grado industrial (99.8%) y dosificadoras neumáticas de pistón</strong> que blindan la calidad de tus empaques, reduciendo el desperdicio prácticamente a cero.</p>
+            " . ($notas ? "<p>En atención a tus necesidades especificadas: <em>$notas</em>, podemos enviarte una simulación técnica del retorno de inversión.</p>" : "") . "
+            <p>Todos nuestros equipos cuentan con 1 año de garantía y despacho a $ciudad con inducción completa a tus operarios.</p>
+            <p>¿Tienes 10 minutos esta semana para presentarte la solución puntual para tu fábrica?</p>
+            <p>Atentamente,<br><strong>Equipo Comercial Power Pack</strong><br>Calle 161 # 54 - 25, Bogotá, Colombia • Tel: +57 300 467 0474</p>";
+            return ['ok' => true, 'asunto' => $asunto, 'mensaje' => $cuerpo, 'origen' => 'Skill B2B: Fórmula PAS Problema (Motor Power Pack)'];
+        }
+    }
+
+    if ($skill_codigo === 'bab_transformacion') {
+        if ($canal === 'whatsapp') {
+            $msg = "¡Hola, $nombre! 👋 Imagina tu planta en $empresa empacando al triple de velocidad, con sellado hermético al 99.8% y presentación impecable en punto de venta, sin horas extra de nómina.\n\nEn *Power Pack* hacemos realidad esa transformación con maquinaria industrial lista para entrega inmediata en Colombia, 12 meses de garantía y facilidades de pago. ¿Podemos revisar juntos la ficha técnica de la solución? 🚀";
+            return ['ok' => true, 'asunto' => '', 'mensaje' => $msg . ($instrucciones_extra ? "\n\n📌 *Nota:* $instrucciones_extra" : ''), 'origen' => 'Skill B2B: Transformación BAB (Motor Power Pack)'];
+        } else {
+            $asunto = "Transformación y Eficiencia en Línea de Empaque para $empresa | Power Pack";
+            $cuerpo = "<p>Estimado(a) <strong>$nombre</strong>$emp_str,</p>
+            <p>Imagina tu línea de producción operando de forma continua, rápida y sin depender de sellados manuales fatigantes, garantizando una presentación impecable que destaque en cualquier supermercado o distribuidor.</p>
+            <p>En <strong>Power Pack</strong> somos el puente tecnológico para que plantas como <strong>$empresa</strong> den ese salto productivo. Ofrecemos selladoras continuas con fechador de lote integrado, selladoras al vacío de campana y dosificadoras de alta precisión en acero inoxidable 304/316.</p>
+            <p><strong>Lo que ganas al equipar tu planta con Power Pack:</strong></p>
+            <ul>
+                <li>Hasta 3x mayor velocidad en empaque y despacho.</li>
+                <li>12 meses de garantía estructural y mecánica.</li>
+                <li>Stock permanente de consumibles y repuestos en Bogotá.</li>
+            </ul>
+            <p>¿Te gustaría coordinar una videollamada de 10 minutos para evaluar la configuración recomendada para tu volumen?</p>
+            <p>Cordialmente,<br><strong>Power Pack Soluciones Industriales</strong><br>www.powerpack.com.co • Tel: +57 300 467 0474</p>";
+            return ['ok' => true, 'asunto' => $asunto, 'mensaje' => $cuerpo, 'origen' => 'Skill B2B: Transformación BAB (Motor Power Pack)'];
+        }
+    }
+
+    if ($skill_codigo === 'reactivacion_fria' || $objetivo === 'reactivacion') {
+        if ($canal === 'whatsapp') {
+            $msg = "Hola, $nombre, ¿cómo estás? Te saluda nuevamente el equipo de *Power Pack*.\n\nImagino que están con mucha carga en planta en $empresa. Quería consultarte con total sinceridad: ¿aún sigue vigente el proyecto de maquinaria de empaque o prefieres que archivemos la propuesta por ahora para no insistir más? Saludos cordiales. 🤝";
+            return ['ok' => true, 'asunto' => '', 'mensaje' => $msg . ($instrucciones_extra ? "\n\n📌 *Nota:* $instrucciones_extra" : ''), 'origen' => 'Skill B2B: Magic Email Reactivación (Motor Power Pack)'];
+        } else {
+            $asunto = "¿Continuamos con la propuesta de maquinaria para $empresa? | Power Pack";
+            $cuerpo = "<p>Estimado(a) <strong>$nombre</strong>$emp_str,</p>
+            <p>Espero que te encuentres muy bien.</p>
+            <p>Te escribo de manera muy breve. Imagino que han estado con bastantes compromisos operativos en <strong>$empresa</strong> durante estas semanas.</p>
+            <p>Quería consultarte con total sinceridad: ¿el proyecto para modernizar la línea de empaque y maquinaria sigue entre las prioridades de la empresa, o prefieres que archivemos la cotización por el momento para no saturar tu bandeja de entrada?</p>
+            <p>Por cortesía comercial, podemos mantener reservados los precios especiales y la disponibilidad de entrega inmediata hasta final de mes si aún les interesa evaluar el equipo.</p>
+            <p>Quedo atento a tus comentarios cuando dispongas de un momento.</p>
+            <p>Un cordial saludo,<br><strong>Equipo Comercial Power Pack</strong><br>Tel / WhatsApp: +57 300 467 0474</p>";
+            return ['ok' => true, 'asunto' => $asunto, 'mensaje' => $cuerpo, 'origen' => 'Skill B2B: Magic Email Reactivación (Motor Power Pack)'];
+        }
+    }
+
+    if ($skill_codigo === 'invitacion_showroom' || $objetivo === 'agendar_visita') {
+        if ($canal === 'whatsapp') {
+            $msg = "¡Hola, $nombre! 👋 Desde *Power Pack* queremos extenderte una invitación especial a nuestro Showroom en Bogotá (Calle 161 # 54 - 25).\n\nPuedes traer muestras reales de tu producto para realizar pruebas de empaque, sellado y dosificado en vivo sin ningún compromiso. Así compruebas velocidad y acabado antes de comprar. ¿Qué día de esta semana te quedaría cómodo visitarnos? 🏢";
+            return ['ok' => true, 'asunto' => '', 'mensaje' => $msg . ($instrucciones_extra ? "\n\n📌 *Nota:* $instrucciones_extra" : ''), 'origen' => 'Skill B2B: Invitación Showroom (Motor Power Pack)'];
+        } else {
+            $asunto = "Invitación Especial a Pruebas en Vivo en Showroom Bogotá | Power Pack";
+            $cuerpo = "<p>Estimado(a) <strong>$nombre</strong>$emp_str,</p>
+            <p>Esperamos que tengas un excelente día.</p>
+            <p>Sabemos que al adquirir maquinaria industrial para <strong>$empresa</strong>, la mayor seguridad es comprobar el resultado con el producto real. Por eso, queremos extenderte una invitación exclusiva a nuestro <strong>Showroom y Centro de Pruebas en Bogotá (Calle 161 # 54 - 25)</strong>.</p>
+            <p>Puedes traer o enviarnos muestras de tu producto para realizar pruebas reales en vivo en nuestras selladoras al vacío, dosificadoras de pistón o selladoras de banda continua. Nuestros ingenieros calibrarán la máquina contigo y validarán la velocidad y hermeticidad exacta.</p>
+            <p>Esta sesión técnica es 100% gratuita y sin compromiso de compra.</p>
+            <p>¿Qué día de esta semana o la próxima te quedaría conveniente agendar tu visita?</p>
+            <p>Cordialmente,<br><strong>Power Pack Soluciones Industriales</strong><br>Calle 161 # 54 - 25, Bogotá, Colombia • Tel: +57 300 467 0474</p>";
+            return ['ok' => true, 'asunto' => $asunto, 'mensaje' => $cuerpo, 'origen' => 'Skill B2B: Invitación Showroom (Motor Power Pack)'];
+        }
+    }
+
+    if ($skill_codigo === 'flash_whatsapp') {
+        $msg = "¡Hola, $nombre! 👋 Te saluda Power Pack. Vimos su producción en $empresa y tenemos selladoras al vacío y dosificadoras en stock en Bogotá con 1 año de garantía. ¿Te queda bien que te comparta la ficha técnica en PDF por aquí?";
+        return ['ok' => true, 'asunto' => '', 'mensaje' => $msg, 'origen' => 'Skill B2B: WhatsApp Flash (Motor Power Pack)'];
+    }
+
+    // Default genérico
+    if ($canal === 'whatsapp') {
+        $msg = "¡Hola, $nombre! 👋 Te saludamos de *Power Pack*, especialistas en maquinaria de empaque y dosificado en Colombia.\n\nNos ponemos en contacto" . ($empresa ? " con $empresa" : "") . " para apoyarte en la automatización de su línea de producción" . ($notas ? " respecto a: $notas" : "") . ".\n\nContamos con stock en Bogotá, 1 año de garantía y entrega inmediata. ¿En qué podemos colaborarte hoy? Quedamos a tu completa disposición.";
+        return ['ok' => true, 'asunto' => '', 'mensaje' => $msg, 'origen' => 'Motor Inteligente Power Pack'];
+    } else {
+        $asunto = "Propuesta Comercial & Soluciones de Empaque | Power Pack";
+        $cuerpo = "<p>Estimado(a) <strong>$nombre</strong>$emp_str,</p>
+        <p>Esperamos que te encuentres muy bien. Te escribimos desde <strong>Power Pack</strong> con el propósito de dar respuesta a tu solicitud de maquinaria y tecnología de empaque industrial.</p>
+        <p>Contamos con una amplia trayectoria asesorando plantas de alimentos, agroindustria y manufactura en Colombia, equipándolas con selladoras al vacío, dosificadoras de alta precisión, selladoras continuas y sistemas de codificación inkjet.</p>
+        " . ($notas ? "<p>En atención a tus necesidades especificadas: <em>$notas</em>, hemos preparado la configuración técnica más adecuada para tu volumen de producción.</p>" : "") . "
+        <p>Todos nuestros equipos cuentan con 1 año de garantía, soporte técnico directo y despacho a $ciudad.</p>
+        <p>Agradecemos nos indiques tu disponibilidad para contactarte y enviarte los detalles técnicos y económicos.</p>
+        <p>Atentamente,<br><strong>Equipo Comercial Power Pack</strong><br>Calle 161 # 54 - 25, Bogotá, Colombia • Tel: +57 300 467 0474</p>";
+        return ['ok' => true, 'asunto' => $asunto, 'mensaje' => $cuerpo, 'origen' => 'Motor Inteligente Power Pack'];
     }
 }
 
 // Función principal para redactar con IA
-function redactar_con_ia($db, $contacto, $canal, $objetivo, $instrucciones_extra = '') {
+function redactar_con_ia($db, $contacto, $canal, $objetivo, $instrucciones_extra = '', $skill_codigo = '') {
     $settings = get_ai_settings($db);
     $api_key = trim($settings['api_key']);
     $provider = $settings['provider'];
     $model = $settings['model'];
     $kb = $settings['knowledge'];
 
-    // Si no hay API key configurada, usar el motor heurístico de respaldo que funciona al instante
+    // Si no hay API key configurada, usar el motor heurístico de respaldo que funciona al instante con las skills
     if (empty($api_key)) {
-        return motor_redaccion_offline($contacto, $canal, $objetivo, $instrucciones_extra, $kb);
+        return motor_redaccion_offline($contacto, $canal, $objetivo, $instrucciones_extra, $kb, $skill_codigo);
     }
 
     $nombre_completo = trim(($contacto['nombre'] ?? '') . ' ' . ($contacto['apellido'] ?? '')) ?: 'Cliente';
@@ -297,15 +382,26 @@ function redactar_con_ia($db, $contacto, $canal, $objetivo, $instrucciones_extra
     $interes = (int)($contacto['interes'] ?? 2);
     $notas = trim($contacto['notas'] ?? '');
 
+    // Cargar Skill B2B seleccionada si aplica
+    $skill = get_skill_by_code($db, $skill_codigo);
+    $skill_prompt_part = "";
+    if ($skill) {
+        $skill_prompt_part = "\n\nHABILIDAD COMERCIAL B2B APLICADA: '{$skill['nombre']}'
+DIRECTRICES ESPECÍFICAS DE ESTA SKILL:
+{$skill['framework_prompt']}
+IMPORTANTE: Debes seguir rigurosamente la estructura y psicología persuasiva de esta skill en tu redacción.";
+    }
+
     $system_instruction = "Eres el Asistente Comercial Senior de Inteligencia Artificial de la empresa 'Power Pack', líder en maquinaria industrial de empaque, sellado, dosificado y codificación en Colombia.
 Tu misión es redactar mensajes comerciales persuasivos, profesionales, directos y adaptados al mercado industrial colombiano.
 Debes consultar y respetar fielmente la Base de Conocimiento oficial de Power Pack que se te suministra a continuación. No inventes precios ni características técnicas que contradigan el catálogo.
+$skill_prompt_part
 
 BASE DE CONOCIMIENTO OFICIAL DE POWER PACK:
 $kb
 
 REGLAS DE FORMATO:
-- Si el canal es WhatsApp: Escribe texto plano optimizado para WhatsApp. Usa negritas con asteriscos (*texto*), viñetas con guiones o emojis industriales elegantes. NO uses HTML ni encabezados markdown #. Máximo 3 o 4 párrafos cortos y un llamado a la acción concreto.
+- Si el canal es WhatsApp: Escribe texto plano optimizado para WhatsApp móvil. Usa negritas con asteriscos (*texto*), viñetas con guiones o emojis industriales elegantes. NO uses HTML ni encabezados markdown #. Máximo 3 o 4 párrafos cortos y un llamado a la acción concreto.
 - Si el canal es Correo: Devuelve primero la línea de asunto con el formato exacto: 'ASUNTO: [Tu Asunto Aquí]' seguido por una línea en blanco y luego el cuerpo del mensaje en formato HTML limpio (usando <p>, <ul>, <li>, <strong>) listo para enviar.
 - Saluda siempre por el nombre del contacto de forma cortés y respetuosa.";
 
@@ -323,6 +419,7 @@ DATOS DEL PROSPECTO:
 
 CANAL DESTINO: " . strtoupper($canal) . "
 OBJETIVO DEL MENSAJE: $objetivo
+SKILL B2B: " . ($skill ? $skill['nombre'] : 'Estándar') . "
 INSTRUCCIONES ADICIONALES DEL ASESOR: " . ($instrucciones_extra ?: 'Ninguna') . "
 
 Genera la redacción comercial perfecta ahora.";
@@ -347,15 +444,17 @@ Genera la redacción comercial perfecta ahora.";
             }
         }
 
+        $origen_str = $skill ? "IA ($provider) + Skill: " . $skill['nombre'] : "IA ($provider: $model)";
+
         return [
             'ok' => true,
             'asunto' => $asunto,
             'mensaje' => $texto,
-            'origen' => "IA ($provider: $model)"
+            'origen' => $origen_str
         ];
     } else {
         // En caso de error de API, usar el respaldo offline y avisar
-        $backup = motor_redaccion_offline($contacto, $canal, $objetivo, $instrucciones_extra, $kb);
+        $backup = motor_redaccion_offline($contacto, $canal, $objetivo, $instrucciones_extra, $kb, $skill_codigo);
         $backup['api_warning'] = "Aviso: La API de $provider arrojó un error (" . $resultado['error'] . "). Se usó el motor inteligente interno.";
         return $backup;
     }

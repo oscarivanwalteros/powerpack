@@ -126,6 +126,7 @@ if ($action === 'generar_ia' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $canal = trim($input['canal'] ?? 'whatsapp'); // 'whatsapp' o 'email'
     $objetivo = trim($input['objetivo'] ?? 'seguimiento_feria');
     $instrucciones = trim($input['instrucciones'] ?? '');
+    $skill = trim($input['skill'] ?? '');
 
     $contacto = [];
     if ($cid > 0) {
@@ -146,7 +147,8 @@ if ($action === 'generar_ia' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         ];
     }
 
-    $res = redactar_con_ia($db, $contacto, $canal, $objetivo, $instrucciones);
+    $res = redactar_con_ia($db, $contacto, $canal, $objetivo, $instrucciones, $skill);
+    $skill_obj = get_skill_by_code($db, $skill);
     
     // Generar enlace directo de WhatsApp si hay teléfono
     $wa_url = '';
@@ -160,8 +162,21 @@ if ($action === 'generar_ia' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         'asunto' => $res['asunto'] ?? '',
         'mensaje' => $res['mensaje'] ?? '',
         'origen' => $res['origen'] ?? 'IA Power Pack',
+        'skill_nombre' => $skill_obj['nombre'] ?? '',
         'wa_url' => $wa_url,
         'api_warning' => $res['api_warning'] ?? ''
+    ]);
+    exit;
+}
+
+// 4. Listado de Skills B2B
+if ($action === 'skills_ia') {
+    require_once __DIR__ . '/ai.php';
+    $canal = trim($_GET['canal'] ?? 'ambos');
+    $skills = get_active_skills($db, $canal);
+    echo json_encode([
+        'ok' => true,
+        'skills' => $skills
     ]);
     exit;
 }

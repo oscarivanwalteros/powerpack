@@ -85,6 +85,25 @@ $plantillas_email = $db->query("SELECT * FROM plantillas WHERE tipo = 'email' OR
                 <button type="submit" class="btn btn-secondary btn-sm">Enviar Prueba</button>
             </form>
         </div>
+
+        <!-- GUÍA OFICIAL HOSTINGER DNS & REGISTROS MX -->
+        <div style="margin-top:20px;padding:16px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:var(--radius-sm)">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                <span style="font-size:18px">📮</span>
+                <h4 style="font-size:13px;font-weight:800;color:#1e40af;margin:0">Guía de Registros DNS & MX en Hostinger</h4>
+            </div>
+            <p style="font-size:11px;color:#1e3a8a;line-height:1.5;margin-bottom:10px">
+                Para que tu correo institucional (ej: <code>administrador@powerpack.site</code>) reciba y envíe correos oficiales con alta entregabilidad y sin caer en spam, tu dominio en Hostinger debe tener activos los siguientes registros:
+            </p>
+            <div style="background:#fff;border:1px solid #bfdbfe;border-radius:6px;padding:10px;font-size:11px;font-family:monospace;color:#0f172a;line-height:1.6;margin-bottom:10px">
+                • <strong>MX 1:</strong> Host: <code>@</code> | Apunta a: <code>mx1.hostinger.com</code> | Prioridad: <code>5</code><br>
+                • <strong>MX 2:</strong> Host: <code>@</code> | Apunta a: <code>mx2.hostinger.com</code> | Prioridad: <code>10</code><br>
+                • <strong>SPF (TXT):</strong> Host: <code>@</code> | <code>v=spf1 include:_netblocks.spamlaws.org include:relay.mailchannels.net include:hostinger.com ~all</code>
+            </div>
+            <div style="font-size:11px;color:#1e40af;line-height:1.4">
+                💡 <em>En Hostinger hPanel &gt; Correos &gt; Tu Dominio, estos registros se configuran de forma automática al crear el buzón. Puedes revisar tus respuestas y correos entrantes en Webmail oficial: <a href="https://mail.hostinger.com" target="_blank" style="color:#1d4ed8;font-weight:700">mail.hostinger.com ↗</a></em>
+            </div>
+        </div>
     </div>
 
     <!-- COLUMNA 2: CONEXIÓN WHATSAPP & PLANTILLAS -->
