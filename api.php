@@ -181,6 +181,80 @@ if ($action === 'skills_ia') {
     exit;
 }
 
+// 5. Guardar y Validar API Key de Inteligencia Artificial (Google Gemini / OpenAI)
+if ($action === 'guardar_ai_key' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_once __DIR__ . '/ai.php';
+
+    $input = json_decode(file_get_contents('php://input'), true);
+    if (!$input) {
+        $input = $_POST;
+    }
+
+    $api_key = trim($input['api_key'] ?? '');
+    $provider = trim($input['provider'] ?? 'gemini');
+    $model = trim($input['model'] ?? ($provider === 'gemini' ? 'gemini-2.0-flash' : 'gpt-4o-mini'));
+
+    if (empty($api_key)) {
+        // Si vacían la API Key, quitarla y volver al motor interno
+        set_config($db, 'ai_api_key', '');
+        echo json_encode([
+            'ok' => true,
+            'mensaje' => 'API Key desconectada. El sistema volverá a utilizar el Motor Heurístico Interno de Power Pack.',
+            'provider' => $provider,
+            'model' => $model,
+            'activo' => false
+        ]);
+        exit;
+    }
+
+    // Validar en vivo la clave con Google Gemini o OpenAI
+    $test_ok = false;
+    $test_err = '';
+    if ($provider === 'gemini') {
+        $ping = llamar_gemini($api_key, $model, 'Di únicamente: LISTO', 'Eres el asistente comercial de Power Pack');
+        $test_ok = $ping['ok'];
+        $test_err = $ping['error'] ?? '';
+        // Si gemini-2.0-flash tuviera error de nombre de modelo, intentar gemini-1.5-flash
+        if (!$test_ok && strpos(strtolower($test_err), 'not found') !== false) {
+            $ping2 = llamar_gemini($api_key, 'gemini-1.5-flash', 'Di únicamente: LISTO', 'Eres el asistente comercial de Power Pack');
+            if ($ping2['ok']) {
+                $test_ok = true;
+                $model = 'gemini-1.5-flash';
+            }
+        }
+    } else {
+        $ping = llamar_openai($api_key, $model, 'Di únicamente: LISTO', 'Eres el asistente comercial de Power Pack');
+        $test_ok = $ping['ok'];
+        $test_err = $ping['error'] ?? '';
+    }
+
+    // Guardar la configuración
+    set_config($db, 'ai_provider', $provider);
+    set_config($db, 'ai_api_key', $api_key);
+    set_config($db, 'ai_model', $model);
+
+    if ($test_ok) {
+        echo json_encode([
+            'ok' => true,
+            'mensaje' => '¡Conexión exitosa y verificada con ' . ($provider === 'gemini' ? 'Google Gemini' : 'OpenAI') . ' (' . $model . ')!',
+            'provider' => $provider,
+            'model' => $model,
+            'activo' => true
+        ]);
+    } else {
+        echo json_encode([
+            'ok' => true,
+            'warning' => true,
+            'mensaje' => 'API Key guardada, pero la verificación arrojó un aviso: ' . $test_err . '. Puedes verificar tu clave o cuota en Google AI Studio.',
+            'error_detalle' => $test_err,
+            'provider' => $provider,
+            'model' => $model,
+            'activo' => true
+        ]);
+    }
+    exit;
+}
+
 // Default response
 echo json_encode([
     'plataforma' => 'Power Pack API',

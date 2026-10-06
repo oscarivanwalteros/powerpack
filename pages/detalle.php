@@ -23,6 +23,8 @@ require_once __DIR__ . '/../ai.php';
 $skills_wa = get_active_skills($db, 'whatsapp');
 $skills_email = get_active_skills($db, 'email');
 $todas_skills = get_active_skills($db, 'ambos');
+$ai_key = get_config($db, 'ai_api_key', '');
+$ai_provider = get_config($db, 'ai_provider', 'gemini');
 
 $clean_tel = limpiar_telefono_whatsapp($c['telefono']);
 ?>
@@ -223,12 +225,21 @@ $clean_tel = limpiar_telefono_whatsapp($c['telefono']);
 
         <!-- COMPOSER DE ACCIONES RÁPIDAS (Tabs estilo HubSpot) -->
         <div style="background:#fff;border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-sm);overflow:hidden">
-            <div style="display:flex;border-bottom:1px solid var(--border);background:#f8fafc;padding:0 8px;overflow-x:auto">
+            <div style="display:flex;border-bottom:1px solid var(--border);background:#f8fafc;padding:0 8px;overflow-x:auto;align-items:center">
                 <button type="button" class="tab-btn active" id="btn-wa" onclick="activarTab('tab-wa')">💬 WhatsApp</button>
                 <button type="button" class="tab-btn" id="btn-email" onclick="activarTab('tab-email')">✉️ Correo Electrónico</button>
                 <button type="button" class="tab-btn" id="btn-llamada" onclick="activarTab('tab-llamada')">📞 Registrar Llamada</button>
                 <button type="button" class="tab-btn" id="btn-tarea" onclick="activarTab('tab-tarea')">✅ Programar Tarea</button>
                 <button type="button" class="tab-btn" id="btn-nota" onclick="activarTab('tab-nota')">📝 Nota Interna</button>
+
+                <div style="margin-left:auto;display:flex;align-items:center;padding:0 8px;gap:6px">
+                    <span id="gemini_status_pill" style="font-size:11px;font-weight:700;color:<?= !empty($ai_key) ? '#059669' : '#d97706' ?>;background:<?= !empty($ai_key) ? '#ecfdf5' : '#fef3c7' ?>;padding:3px 10px;border-radius:12px;border:1px solid <?= !empty($ai_key) ? '#a7f3d0' : '#fde68a' ?>">
+                        <?= !empty($ai_key) ? '● Gemini Conectado' : '⚡ Motor Interno' ?>
+                    </span>
+                    <button type="button" onclick="abrirModalConectarGemini()" class="btn btn-secondary btn-sm" style="font-size:11px;padding:3px 8px;font-weight:700" title="Configurar o conectar API Key de Gemini">
+                        🔑 Clave Gemini
+                    </button>
+                </div>
             </div>
 
             <div style="padding:20px">
@@ -823,6 +834,127 @@ function copiarTextoIA() {
         alert('¡Texto copiado al portapapeles!');
     });
 }
+
+// FUNCIONES PARA CONEXIÓN DE GOOGLE GEMINI CON 1-CLIC
+function abrirModalConectarGemini() {
+    var modal = document.getElementById('modalConectarGemini');
+    if (modal) {
+        modal.style.display = 'flex';
+    }
+}
+
+function pegarApiKeyDesdeClipboard(inputId) {
+    var input = document.getElementById(inputId);
+    if (!navigator.clipboard || !navigator.clipboard.readText) {
+        var manual = prompt('Pega aquí tu API Key de Google Gemini:');
+        if (manual && manual.trim()) {
+            input.value = manual.trim();
+            input.type = 'text';
+        }
+        return;
+    }
+    navigator.clipboard.readText()
+        .then(function(text) {
+            text = (text || '').trim();
+            if (text) {
+                input.value = text;
+                input.type = 'text';
+                input.focus();
+                input.style.borderColor = '#059669';
+                input.style.boxShadow = '0 0 0 3px rgba(5,150,105,0.25)';
+                setTimeout(function() {
+                    input.style.borderColor = '';
+                    input.style.boxShadow = '';
+                }, 1800);
+            } else {
+                alert('El portapapeles está vacío. Por favor copia primero la API Key desde Google AI Studio.');
+            }
+        })
+        .catch(function() {
+            var manual = prompt('Por favor pega aquí la API Key copiada de Google AI Studio:');
+            if (manual && manual.trim()) {
+                input.value = manual.trim();
+                input.type = 'text';
+            }
+        });
+}
+
+function toggleVisibilidadPassword(inputId, btnId) {
+    var input = document.getElementById(inputId);
+    var btn = btnId ? document.getElementById(btnId) : null;
+    if (input.type === 'password') {
+        input.type = 'text';
+        if (btn) btn.innerText = '🙈 Ocultar';
+    } else {
+        input.type = 'password';
+        if (btn) btn.innerText = '👁️ Mostrar';
+    }
+}
+
+function conectarGeminiAJAX(inputId, statusId, provider, model) {
+    var input = document.getElementById(inputId);
+    var key = input ? input.value.trim() : '';
+    var statusDiv = document.getElementById(statusId);
+    
+    statusDiv.style.display = 'block';
+    statusDiv.style.background = '#eff6ff';
+    statusDiv.style.color = '#1e40af';
+    statusDiv.style.border = '1px solid #bfdbfe';
+    statusDiv.style.padding = '10px 12px';
+    statusDiv.style.borderRadius = '6px';
+    statusDiv.style.fontSize = '12px';
+    statusDiv.innerText = '⏳ Verificando API Key en tiempo real con Google Gemini...';
+
+    fetch('api.php?action=guardar_ai_key', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            api_key: key,
+            provider: provider || 'gemini',
+            model: model || 'gemini-2.0-flash'
+        })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(res) {
+        if (res.ok && !res.warning) {
+            statusDiv.style.background = '#ecfdf5';
+            statusDiv.style.color = '#065f46';
+            statusDiv.style.border = '1px solid #a7f3d0';
+            statusDiv.innerHTML = '✅ <strong>¡Conectado exitosamente!</strong> ' + res.mensaje;
+            
+            var pill = document.getElementById('gemini_status_pill');
+            if (pill) {
+                if (res.activo) {
+                    pill.style.color = '#059669';
+                    pill.style.background = '#ecfdf5';
+                    pill.style.borderColor = '#a7f3d0';
+                    pill.innerText = '● Gemini Conectado';
+                } else {
+                    pill.style.color = '#d97706';
+                    pill.style.background = '#fef3c7';
+                    pill.style.borderColor = '#fde68a';
+                    pill.innerText = '⚡ Motor Interno';
+                }
+            }
+        } else if (res.warning) {
+            statusDiv.style.background = '#fffbeb';
+            statusDiv.style.color = '#92400e';
+            statusDiv.style.border = '1px solid #fde68a';
+            statusDiv.innerHTML = '⚠️ <strong>Aviso:</strong> ' + res.mensaje;
+        } else {
+            statusDiv.style.background = '#fef2f2';
+            statusDiv.style.color = '#991b1b';
+            statusDiv.style.border = '1px solid #fecaca';
+            statusDiv.innerHTML = '❌ <strong>Error:</strong> ' + (res.error || res.mensaje || 'No se pudo conectar.');
+        }
+    })
+    .catch(function(err) {
+        statusDiv.style.background = '#fef2f2';
+        statusDiv.style.color = '#991b1b';
+        statusDiv.style.border = '1px solid #fecaca';
+        statusDiv.innerHTML = '❌ <strong>Error de conexión:</strong> ' + err.message;
+    });
+}
 </script>
 
 <!-- MODAL COPILOTO IA POWER PACK -->
@@ -893,6 +1025,75 @@ function copiarTextoIA() {
                         ✅ Pegar en el Editor y Cerrar
                     </button>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL CONECTAR API KEY DE GOOGLE GEMINI -->
+<div id="modalConectarGemini" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.7);z-index:10000;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)">
+    <div style="background:#fff;border-radius:14px;max-width:580px;width:100%;box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);overflow:hidden">
+        <div style="background:linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);padding:18px 24px;display:flex;justify-content:space-between;align-items:center;color:#fff">
+            <div style="display:flex;align-items:center;gap:12px">
+                <span style="font-size:24px">⚡</span>
+                <div>
+                    <h3 style="margin:0;font-size:17px;font-weight:800;color:#fff">Conectar Google Gemini AI</h3>
+                    <div style="font-size:12px;color:#bfdbfe">Inteligencia artificial para redacción comercial de correos y WhatsApp</div>
+                </div>
+            </div>
+            <button onclick="document.getElementById('modalConectarGemini').style.display='none'" style="background:none;border:none;color:#bfdbfe;font-size:24px;cursor:pointer;line-height:1">&times;</button>
+        </div>
+
+        <div style="padding:24px;display:flex;flex-direction:column;gap:18px">
+            <!-- PASO 1 -->
+            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px">
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+                    <div>
+                        <div style="font-size:13px;font-weight:800;color:#0f172a">Paso 1: Obtener API Key de Google</div>
+                        <div style="font-size:11px;color:#64748b;margin-top:2px">Es 100% gratuita, sin tarjeta de crédito, en Google AI Studio.</div>
+                    </div>
+                    <a href="https://aistudio.google.com/app/apikey" target="_blank" class="btn btn-primary btn-sm" style="background:#2563eb;white-space:nowrap;font-size:12px;padding:8px 14px;font-weight:700" title="Abre Google AI Studio en nueva pestaña">
+                        🔑 Abrir Google AI Studio ↗
+                    </a>
+                </div>
+            </div>
+
+            <!-- PASO 2 -->
+            <div>
+                <label style="font-size:13px;font-weight:800;color:#0f172a;display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                    <span>Paso 2: Pegar tu API Key de Gemini:</span>
+                    <button type="button" onclick="pegarApiKeyDesdeClipboard('modal_gemini_key')" class="btn btn-secondary btn-sm" style="font-size:11px;padding:3px 10px;font-weight:700;color:#1e40af;background:#eff6ff;border:1px solid #bfdbfe">
+                        📋 Pegar desde Portapapeles
+                    </button>
+                </label>
+                <div style="display:flex;gap:6px">
+                    <input type="password" id="modal_gemini_key" value="<?= h($ai_key) ?>" placeholder="Pega aquí tu clave (inicia con AIzaSy...)" style="flex:1;padding:10px 12px;font-size:13px;font-family:monospace;border:1px solid #cbd5e1;border-radius:6px">
+                    <button type="button" id="btn_toggle_gemini_key" onclick="toggleVisibilidadPassword('modal_gemini_key', 'btn_toggle_gemini_key')" class="btn btn-secondary btn-sm" style="padding:0 12px;font-size:12px">
+                        👁️ Mostrar
+                    </button>
+                </div>
+                <div style="font-size:11px;color:#64748b;margin-top:4px">
+                    Tu clave se guarda en tu base de datos y se utiliza para redactar correos y WhatsApp.
+                </div>
+            </div>
+
+            <!-- PASO 3 -->
+            <div>
+                <button type="button" onclick="conectarGeminiAJAX('modal_gemini_key', 'modal_gemini_status', 'gemini', 'gemini-2.0-flash')" class="btn btn-primary" style="width:100%;padding:12px;font-size:14px;font-weight:800;background:#059669;display:flex;align-items:center;justify-content:center;gap:8px">
+                    <span>⚡ Paso 3: Conectar y Validar Clave en Vivo</span>
+                </button>
+            </div>
+
+            <!-- RESULTADO / STATUS -->
+            <div id="modal_gemini_status" style="display:none"></div>
+
+            <div style="display:flex;justify-content:space-between;align-items:center;padding-top:10px;border-top:1px solid #f1f5f9">
+                <button type="button" onclick="document.getElementById('modal_gemini_key').value='';conectarGeminiAJAX('modal_gemini_key', 'modal_gemini_status');" style="background:none;border:none;color:#dc2626;font-size:12px;cursor:pointer;text-decoration:underline">
+                    Desconectar clave actual (usar motor interno)
+                </button>
+                <button type="button" onclick="document.getElementById('modalConectarGemini').style.display='none'" class="btn btn-secondary btn-sm" style="padding:6px 16px">
+                    Cerrar
+                </button>
             </div>
         </div>
     </div>

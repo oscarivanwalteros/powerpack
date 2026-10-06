@@ -119,7 +119,20 @@ $skills_list = $db->query("SELECT * FROM skills_ia ORDER BY id ASC");
                 </div>
             </div>
 
-            <form method="POST">
+            <!-- ASISTENTE DE CONEXIÓN RÁPIDA 1-CLIC -->
+            <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:16px;margin-bottom:18px">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px">
+                    <div>
+                        <strong style="color:#0369a1;font-size:13px;display:block">⚡ Asistente Rápido: Conectar Google Gemini Gratis</strong>
+                        <span style="font-size:11px;color:#0284c7">Obtén tu clave gratuita de Google y conéctala en 3 clics sin salir de la plataforma:</span>
+                    </div>
+                    <a href="https://aistudio.google.com/app/apikey" target="_blank" class="btn btn-primary btn-sm" style="background:#0284c7;white-space:nowrap;font-size:12px;padding:7px 12px;font-weight:700">
+                        🔑 1. Abrir Google AI Studio ↗
+                    </a>
+                </div>
+            </div>
+
+            <form method="POST" id="form-ai-config">
                 <input type="hidden" name="guardar_ai_config" value="1">
                 
                 <div class="form-row">
@@ -134,7 +147,6 @@ $skills_list = $db->query("SELECT * FROM skills_ia ORDER BY id ASC");
                     <div class="form-group">
                         <label style="font-weight:700;font-size:12px">Modelo de IA:</label>
                         <select name="ai_model" id="ai_model" style="font-weight:600">
-                            <!-- Opciones actualizadas por JS -->
                             <option value="gemini-2.0-flash" <?= $ai_settings['model']==='gemini-2.0-flash'?'selected':'' ?>>Gemini 2.0 Flash (Ultrarrápido y potente)</option>
                             <option value="gemini-1.5-flash" <?= $ai_settings['model']==='gemini-1.5-flash'?'selected':'' ?>>Gemini 1.5 Flash</option>
                             <option value="gpt-4o-mini" <?= $ai_settings['model']==='gpt-4o-mini'?'selected':'' ?>>GPT-4o Mini</option>
@@ -143,25 +155,40 @@ $skills_list = $db->query("SELECT * FROM skills_ia ORDER BY id ASC");
                 </div>
 
                 <div class="form-group" style="margin-top:10px">
-                    <label style="font-weight:700;font-size:12px">API Key secreta:</label>
-                    <input type="password" name="ai_api_key" value="<?= h($ai_settings['api_key']) ?>" placeholder="AIzaSy... o sk-proj-..." style="font-family:monospace;font-size:13px">
+                    <label style="font-weight:700;font-size:12px;display:flex;justify-content:space-between;align-items:center">
+                        <span>API Key Secreta:</span>
+                        <button type="button" onclick="pegarApiKeyDesdeClipboard('ai_api_key')" class="btn btn-secondary btn-sm" style="font-size:11px;padding:3px 10px;font-weight:700;color:#0284c7;background:#f0f9ff;border:1px solid #bae6fd">
+                            📋 2. Pegar desde Portapapeles
+                        </button>
+                    </label>
+                    <div style="display:flex;gap:6px;margin-top:4px">
+                        <input type="password" id="ai_api_key" name="ai_api_key" value="<?= h($ai_settings['api_key']) ?>" placeholder="AIzaSy... o sk-proj-..." style="flex:1;font-family:monospace;font-size:13px;padding:9px 12px">
+                        <button type="button" id="btn_toggle_kb_key" onclick="toggleVisibilidadPassword('ai_api_key', 'btn_toggle_kb_key')" class="btn btn-secondary btn-sm" style="padding:0 12px;font-size:12px">
+                            👁️ Mostrar
+                        </button>
+                    </div>
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
                         <span style="font-size:11px;color:var(--fg-secondary)">
                             ¿No tienes API Key? Google Gemini ofrece un <strong>nivel 100% gratuito</strong> sin tarjeta de crédito.
                         </span>
-                        <a href="https://aistudio.google.com/app/apikey" target="_blank" style="font-size:11px;color:#2c60a4;font-weight:700">Crear clave gratis ↗</a>
+                        <a href="https://aistudio.google.com/app/apikey" target="_blank" style="font-size:11px;color:#2c60a4;font-weight:700">Crear clave en AI Studio ↗</a>
                     </div>
                 </div>
 
-                <div style="margin-top:18px;display:flex;gap:12px">
-                    <button type="submit" class="btn btn-primary" style="padding:10px 20px;font-size:13px;background:#2c60a4">
-                        Guardar Conexión de IA
+                <div style="margin-top:18px;display:flex;gap:10px;flex-wrap:wrap">
+                    <button type="button" onclick="conectarGeminiAJAX('ai_api_key', 'res-test-ia')" class="btn btn-primary" style="padding:10px 18px;font-size:13px;background:#059669;font-weight:700" id="btn-conectar-ia">
+                        ⚡ 3. Conectar y Probar en Vivo
                     </button>
-                    <button type="button" onclick="probarConexionIA()" class="btn btn-secondary" style="padding:10px 16px;font-size:13px" id="btn-probar-ia">
-                        ⚡ Probar Conexión
+                    <button type="submit" class="btn btn-secondary" style="padding:10px 16px;font-size:13px">
+                        💾 Guardar Conexión
                     </button>
+                    <?php if (!empty($ai_settings['api_key'])): ?>
+                    <button type="button" onclick="document.getElementById('ai_api_key').value='';conectarGeminiAJAX('ai_api_key', 'res-test-ia');" class="btn btn-outline" style="padding:10px 12px;font-size:12px;color:#dc2626;border-color:#fca5a5">
+                        Desconectar
+                    </button>
+                    <?php endif; ?>
                 </div>
-                <div id="res-test-ia" style="margin-top:12px;font-size:12px;display:none"></div>
+                <div id="res-test-ia" style="margin-top:14px;font-size:12px;display:none"></div>
             </form>
         </div>
 
@@ -399,11 +426,126 @@ function actualizarModelos() {
     }
 }
 
+function pegarApiKeyDesdeClipboard(inputId) {
+    var input = document.getElementById(inputId);
+    if (!navigator.clipboard || !navigator.clipboard.readText) {
+        var manual = prompt('Pega aquí tu API Key de Google Gemini:');
+        if (manual && manual.trim()) {
+            input.value = manual.trim();
+            input.type = 'text';
+        }
+        return;
+    }
+    navigator.clipboard.readText()
+        .then(function(text) {
+            text = (text || '').trim();
+            if (text) {
+                input.value = text;
+                input.type = 'text';
+                input.focus();
+                input.style.borderColor = '#059669';
+                input.style.boxShadow = '0 0 0 3px rgba(5,150,105,0.25)';
+                setTimeout(function() {
+                    input.style.borderColor = '';
+                    input.style.boxShadow = '';
+                }, 1800);
+            } else {
+                alert('El portapapeles está vacío. Por favor copia primero la API Key desde Google AI Studio.');
+            }
+        })
+        .catch(function() {
+            var manual = prompt('Por favor pega aquí la API Key copiada de Google AI Studio:');
+            if (manual && manual.trim()) {
+                input.value = manual.trim();
+                input.type = 'text';
+            }
+        });
+}
+
+function toggleVisibilidadPassword(inputId, btnId) {
+    var input = document.getElementById(inputId);
+    var btn = btnId ? document.getElementById(btnId) : null;
+    if (input.type === 'password') {
+        input.type = 'text';
+        if (btn) btn.innerText = '🙈 Ocultar';
+    } else {
+        input.type = 'password';
+        if (btn) btn.innerText = '👁️ Mostrar';
+    }
+}
+
+function conectarGeminiAJAX(inputId, statusId) {
+    var input = document.getElementById(inputId);
+    var key = input ? input.value.trim() : '';
+    var provSelect = document.getElementById('ai_provider');
+    var modelSelect = document.getElementById('ai_model');
+    var provider = provSelect ? provSelect.value : 'gemini';
+    var model = modelSelect ? modelSelect.value : 'gemini-2.0-flash';
+    var statusDiv = document.getElementById(statusId);
+    var btn = document.getElementById('btn-conectar-ia');
+
+    if (btn) btn.disabled = true;
+    statusDiv.style.display = 'block';
+    statusDiv.className = 'alert alert-info';
+    statusDiv.style.background = '#eff6ff';
+    statusDiv.style.color = '#1e40af';
+    statusDiv.style.border = '1px solid #bfdbfe';
+    statusDiv.style.padding = '12px 14px';
+    statusDiv.style.borderRadius = '6px';
+    statusDiv.innerText = '⏳ Verificando API Key en tiempo real con los servidores de Google Gemini...';
+
+    fetch('api.php?action=guardar_ai_key', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            api_key: key,
+            provider: provider,
+            model: model
+        })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(res) {
+        if (btn) btn.disabled = false;
+        if (res.ok && !res.warning) {
+            statusDiv.className = 'alert alert-success';
+            statusDiv.style.background = '#ecfdf5';
+            statusDiv.style.color = '#065f46';
+            statusDiv.style.border = '1px solid #a7f3d0';
+            statusDiv.innerHTML = '✅ <strong>¡Conectado exitosamente!</strong> ' + res.mensaje;
+            setTimeout(function() {
+                location.reload();
+            }, 1800);
+        } else if (res.warning) {
+            statusDiv.className = 'alert alert-warning';
+            statusDiv.style.background = '#fffbeb';
+            statusDiv.style.color = '#92400e';
+            statusDiv.style.border = '1px solid #fde68a';
+            statusDiv.innerHTML = '⚠️ <strong>Aviso:</strong> ' + res.mensaje;
+        } else {
+            statusDiv.className = 'alert alert-danger';
+            statusDiv.style.background = '#fef2f2';
+            statusDiv.style.color = '#991b1b';
+            statusDiv.style.border = '1px solid #fecaca';
+            statusDiv.innerHTML = '❌ <strong>Error:</strong> ' + (res.error || res.mensaje || 'No se pudo conectar.');
+        }
+    })
+    .catch(function(err) {
+        if (btn) btn.disabled = false;
+        statusDiv.className = 'alert alert-danger';
+        statusDiv.style.background = '#fef2f2';
+        statusDiv.style.color = '#991b1b';
+        statusDiv.style.border = '1px solid #fecaca';
+        statusDiv.innerHTML = '❌ <strong>Error de conexión:</strong> ' + err.message;
+    });
+}
+
 function probarConexionIA() {
     var btn = document.getElementById('btn-probar-ia');
     var resDiv = document.getElementById('res-test-ia');
-    btn.disabled = true;
-    btn.innerText = 'Probando...';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerText = 'Probando...';
+    }
     resDiv.style.display = 'block';
     resDiv.className = 'alert alert-info';
     resDiv.innerText = 'Enviando prueba de conexión con la IA...';
