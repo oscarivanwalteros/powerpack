@@ -1,4 +1,37 @@
 <?php
+// Polyfills seguros para funciones mb_* si la extensión mbstring no está instalada
+if (!function_exists('mb_strlen')) {
+    function mb_strlen($str, $encoding = 'UTF-8') {
+        return strlen((string)$str);
+    }
+}
+if (!function_exists('mb_substr')) {
+    function mb_substr($str, $start, $length = null, $encoding = 'UTF-8') {
+        if ($length === null) return substr((string)$str, $start);
+        return substr((string)$str, $start, $length);
+    }
+}
+if (!function_exists('mb_strtoupper')) {
+    function mb_strtoupper($str, $encoding = 'UTF-8') {
+        return strtoupper((string)$str);
+    }
+}
+if (!function_exists('mb_strtolower')) {
+    function mb_strtolower($str, $encoding = 'UTF-8') {
+        return strtolower((string)$str);
+    }
+}
+if (!function_exists('mb_convert_encoding')) {
+    function mb_convert_encoding($str, $to_encoding, $from_encoding = '') {
+        if (function_exists('iconv')) {
+            $from = is_array($from_encoding) ? implode(',', $from_encoding) : $from_encoding;
+            $res = @iconv($from ?: 'UTF-8', $to_encoding . '//IGNORE', (string)$str);
+            if ($res !== false) return $res;
+        }
+        return (string)$str;
+    }
+}
+
 // Base de datos SQLite - se crea y actualiza automáticamente
 $db = new SQLite3(__DIR__ . '/powerpack.db');
 $db->exec("PRAGMA journal_mode=WAL");
@@ -154,6 +187,24 @@ $db->exec("CREATE TABLE IF NOT EXISTS skills_ia (
     activo INTEGER DEFAULT 1,
     fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP
 )");
+
+$db->exec("CREATE TABLE IF NOT EXISTS documentos_ia (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    titulo TEXT NOT NULL,
+    categoria TEXT DEFAULT 'general', -- 'precios', 'inventario', 'politicas', 'catalogo', 'correos', 'general'
+    nombre_archivo TEXT NOT NULL,
+    ruta_archivo TEXT NOT NULL,
+    tipo_mime TEXT,
+    tamano INTEGER DEFAULT 0,
+    texto_extraido TEXT NOT NULL,
+    activo INTEGER DEFAULT 1,
+    fecha_subida DATETIME DEFAULT CURRENT_TIMESTAMP
+)");
+
+// Asegurar que la carpeta de almacenamiento de conocimiento exista con permisos seguros
+if (!is_dir(__DIR__ . '/uploads/conocimiento')) {
+    @mkdir(__DIR__ . '/uploads/conocimiento', 0777, true);
+}
 
 // Migraciones seguras para bases de datos existentes
 function agregar_columna_si_falta($db, $tabla, $columna, $tipo) {

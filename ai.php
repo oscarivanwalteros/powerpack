@@ -67,14 +67,132 @@ e) TÚNELES DE TERMOENCOGIDO Y ENVOLVEDORAS:
     }
 }
 
-// Obtener la base de conocimiento guardada en la base de datos o la predeterminada
+// Obtener la base de conocimiento guardada en la base de datos + documentos activos subidos
 function get_ai_knowledge_base($db) {
     $kb = get_config($db, 'ai_knowledge_base', '');
     if (empty(trim($kb))) {
         $kb = get_ai_default_knowledge();
         set_config($db, 'ai_knowledge_base', $kb);
     }
-    return $kb;
+
+    // Consultar todos los documentos de contexto activos subidos en uploads/conocimiento/
+    $docs = @$db->query("SELECT * FROM documentos_ia WHERE activo = 1 ORDER BY categoria ASC, id DESC");
+    $docs_text = "";
+    if ($docs) {
+        $categoria_nombres = [
+            'precios'    => 'LISTA DE PRECIOS & TARIFAS DE MAQUINARIA',
+            'inventario' => 'INVENTARIOS, STOCK & TIEMPOS DE ENTREGA',
+            'politicas'  => 'POLÍTICAS COMERCIALES, GARANTÍAS Y ENVÍOS',
+            'catalogo'   => 'FICHAS TÉCNICAS Y ESPECIFICACIONES DE PRODUCTO',
+            'correos'    => 'MODELOS DE CORREOS Y RESPUESTAS COMERCIALES REALES',
+            'general'    => 'INFORMACIÓN Y CONTEXTO EMPRESARIAL ADICIONAL'
+        ];
+
+        $docs_por_cat = [];
+        while ($d = $docs->fetchArray(SQLITE3_ASSOC)) {
+            $cat = $d['categoria'] ?: 'general';
+            $docs_por_cat[$cat][] = $d;
+        }
+
+        if (!empty($docs_por_cat)) {
+            $docs_text .= "\n\n=== ARCHIVOS Y DOCUMENTOS DE CONTEXTO SUBIDOS POR POWER PACK ===";
+            foreach ($docs_por_cat as $cat => $items) {
+                $nom_cat = $categoria_nombres[$cat] ?? strtoupper($cat);
+                $docs_text .= "\n\n--- SECCIÓN: $nom_cat ---";
+                foreach ($items as $item) {
+                    $docs_text .= "\n[DOCUMENTO: " . $item['titulo'] . " (" . $item['nombre_archivo'] . ")]\n";
+                    $contenido = trim($item['texto_extraido']);
+                    if (mb_strlen($contenido) > 8000) {
+                        $contenido = mb_substr($contenido, 0, 8000) . "\n...(contenido adicional resumido)";
+                    }
+                    $docs_text .= $contenido . "\n";
+                }
+            }
+        }
+    }
+
+    return $kb . $docs_text;
+}
+
+// Extractor de texto desde PDFs (pdftotext nativo de Linux con fallback a parser de streams de PHP)
+function extraer_texto_pdf($file_path) {
+    if (function_exists('shell_exec')) {
+        $cmd = 'pdftotext ' . escapeshellarg($file_path) . ' - 2>/dev/null';
+        $out = @shell_exec($cmd);
+        if ($out !== null && trim($out) !== '') {
+            return trim($out);
+        }
+    }
+
+    $content = @file_get_contents($file_path);
+    if (!$content) return '';
+
+    $text = '';
+    if (preg_match_all('/stream[\r\n]+(.*?)[\r\n]+endstream/is', $content, $matches)) {
+        foreach ($matches[1] as $stream) {
+            $data = $stream;
+            if (function_exists('gzuncompress')) {
+                $uncompressed = @gzuncompress($stream);
+                if ($uncompressed !== false) {
+                    $data = $uncompressed;
+                }
+            }
+
+            if (preg_match_all('/BT[\r\n]+(.*?)[\r\n]+ET/is', $data, $bt_matches)) {
+                foreach ($bt_matches[1] as $bt) {
+                    if (preg_match_all('/\((.*?)\)\s*T[jJ]/s', $bt, $str_matches)) {
+                        foreach ($str_matches[1] as $s) {
+                            $text .= $s . " ";
+                        }
+                    } elseif (preg_match_all('/\[(.*?)\]\s*TJ/s', $bt, $arr_matches)) {
+                        foreach ($arr_matches[1] as $arr) {
+                            if (preg_match_all('/\((.*?)\)/s', $arr, $sub_str)) {
+                                foreach ($sub_str[1] as $s) {
+                                    $text .= $s;
+                                }
+                                $text .= " ";
+                            }
+                        }
+                    }
+                    $text .= "\n";
+                }
+            }
+        }
+    }
+
+    $text = str_replace(['\\(', '\\)', '\\\\'], ['(', ')', '\\'], $text);
+    $text = preg_replace('/[ \t]+/', ' ', $text);
+    $text = preg_replace('/(\r?\n){3,}/', "\n\n", $text);
+
+    return trim($text);
+}
+
+// Extractor universal de archivos de contexto para la IA (PDF, TXT, CSV, MD, JSON, EML, etc.)
+function extraer_texto_archivo($file_path, $orig_name = '') {
+    $ext = strtolower(pathinfo($orig_name ?: $file_path, PATHINFO_EXTENSION));
+
+    if (in_array($ext, ['txt', 'csv', 'tsv', 'json', 'md', 'eml', 'log', 'xml'])) {
+        $raw = @file_get_contents($file_path) ?: '';
+        if (!preg_match('//u', $raw)) {
+            $raw = @mb_convert_encoding($raw, 'UTF-8', 'Windows-1252, ISO-8859-1, UTF-8');
+        }
+        return trim($raw);
+    }
+
+    if (in_array($ext, ['html', 'htm'])) {
+        $raw = @file_get_contents($file_path) ?: '';
+        return trim(strip_tags($raw));
+    }
+
+    if ($ext === 'pdf') {
+        $pdf_txt = extraer_texto_pdf($file_path);
+        if (!empty($pdf_txt)) return $pdf_txt;
+    }
+
+    // Fallback para otros formatos
+    $raw = @file_get_contents($file_path, false, null, 0, 150000) ?: '';
+    $clean = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', $raw);
+    return trim($clean);
 }
 
 // Configuración general de IA

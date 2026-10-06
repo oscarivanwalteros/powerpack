@@ -62,8 +62,117 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['eliminar_skill'])) {
     }
 }
 
+// 1. Subir Documento de Conocimiento / Archivo de Contexto
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['subir_documento_ia'])) {
+    $titulo = trim($_POST['titulo'] ?? '');
+    $categoria = trim($_POST['categoria'] ?? 'general');
+    $texto_manual = trim($_POST['texto_manual'] ?? '');
+    
+    $nombre_archivo = '';
+    $ruta_archivo = '';
+    $tipo_mime = 'text/plain';
+    $tamano = 0;
+    $texto_extraido = '';
+
+    $upload_dir = __DIR__ . '/../uploads/conocimiento/';
+    if (!is_dir($upload_dir)) {
+        @mkdir($upload_dir, 0777, true);
+    }
+
+    if (isset($_FILES['archivo_doc']) && $_FILES['archivo_doc']['error'] === UPLOAD_ERR_OK) {
+        $orig_name = basename($_FILES['archivo_doc']['name']);
+        $ext = strtolower(pathinfo($orig_name, PATHINFO_EXTENSION));
+        $clean_name = preg_replace('/[^a-zA-Z0-9_\.-]/', '_', $orig_name);
+        $safe_name = time() . '_' . $clean_name;
+        $dest_path = $upload_dir . $safe_name;
+
+        if (move_uploaded_file($_FILES['archivo_doc']['tmp_name'], $dest_path)) {
+            $nombre_archivo = $orig_name;
+            $ruta_archivo = 'uploads/conocimiento/' . $safe_name;
+            $tamano = (int)filesize($dest_path);
+            $tipo_mime = mime_content_type($dest_path) ?: 'application/octet-stream';
+            $texto_extraido = extraer_texto_archivo($dest_path, $orig_name);
+            if (empty($titulo)) {
+                $titulo = pathinfo($orig_name, PATHINFO_FILENAME);
+            }
+        } else {
+            $mensaje_error = 'Error al guardar el archivo en el servidor. Verifica los permisos de subida.';
+        }
+    } elseif (!empty($texto_manual)) {
+        $safe_name = 'nota_' . time() . '.txt';
+        $dest_path = $upload_dir . $safe_name;
+        file_put_contents($dest_path, $texto_manual);
+        $nombre_archivo = 'Nota_Texto_' . date('Ymd_His') . '.txt';
+        $ruta_archivo = 'uploads/conocimiento/' . $safe_name;
+        $tamano = strlen($texto_manual);
+        $texto_extraido = $texto_manual;
+        if (empty($titulo)) {
+            $titulo = 'Nota de Contexto (' . date('d/m/Y') . ')';
+        }
+    } else {
+        $mensaje_error = 'Por favor selecciona un archivo (PDF, TXT, CSV...) o pega el texto directamente.';
+    }
+
+    if (!empty($texto_extraido)) {
+        $stmt_doc = $db->prepare("INSERT INTO documentos_ia (titulo, categoria, nombre_archivo, ruta_archivo, tipo_mime, tamano, texto_extraido, activo) VALUES (?, ?, ?, ?, ?, ?, ?, 1)");
+        $stmt_doc->bindValue(1, $titulo, SQLITE3_TEXT);
+        $stmt_doc->bindValue(2, $categoria, SQLITE3_TEXT);
+        $stmt_doc->bindValue(3, $nombre_archivo, SQLITE3_TEXT);
+        $stmt_doc->bindValue(4, $ruta_archivo, SQLITE3_TEXT);
+        $stmt_doc->bindValue(5, $tipo_mime, SQLITE3_TEXT);
+        $stmt_doc->bindValue(6, $tamano, SQLITE3_INTEGER);
+        $stmt_doc->bindValue(7, $texto_extraido, SQLITE3_TEXT);
+        $stmt_doc->execute();
+        $mensaje_exito = "¡Documento '{$titulo}' procesado y guardado con éxito! La IA ahora tiene acceso a esta información para redactar mejores correos y WhatsApp.";
+    } elseif (empty($mensaje_error)) {
+        $mensaje_error = 'No se pudo extraer texto legible del documento seleccionado.';
+    }
+}
+
+// 2. Alternar estado activo de documento
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['toggle_documento_ia'])) {
+    $doc_id = (int)($_POST['doc_id'] ?? 0);
+    if ($doc_id > 0) {
+        $db->exec("UPDATE documentos_ia SET activo = 1 - activo WHERE id = $doc_id");
+        $mensaje_exito = 'Estado del documento actualizado para la IA.';
+    }
+}
+
+// 3. Eliminar documento
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['eliminar_documento_ia'])) {
+    $doc_id = (int)($_POST['doc_id'] ?? 0);
+    if ($doc_id > 0) {
+        $ruta = $db->querySingle("SELECT ruta_archivo FROM documentos_ia WHERE id = $doc_id");
+        if ($ruta && file_exists(__DIR__ . '/../' . $ruta)) {
+            @unlink(__DIR__ . '/../' . $ruta);
+        }
+        $db->exec("DELETE FROM documentos_ia WHERE id = $doc_id");
+        $mensaje_exito = 'Documento eliminado del contexto de la IA.';
+    }
+}
+
+// 4. Editar texto extraído de documento
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['editar_documento_ia'])) {
+    $doc_id = (int)($_POST['doc_id'] ?? 0);
+    $nuevo_titulo = trim($_POST['titulo'] ?? '');
+    $nueva_cat = trim($_POST['categoria'] ?? 'general');
+    $nuevo_texto = trim($_POST['texto_extraido'] ?? '');
+    if ($doc_id > 0 && $nuevo_titulo && $nuevo_texto) {
+        $stmt_ed = $db->prepare("UPDATE documentos_ia SET titulo = ?, categoria = ?, texto_extraido = ? WHERE id = ?");
+        $stmt_ed->bindValue(1, $nuevo_titulo, SQLITE3_TEXT);
+        $stmt_ed->bindValue(2, $nueva_cat, SQLITE3_TEXT);
+        $stmt_ed->bindValue(3, $nuevo_texto, SQLITE3_TEXT);
+        $stmt_ed->bindValue(4, $doc_id, SQLITE3_INTEGER);
+        $stmt_ed->execute();
+        $mensaje_exito = 'Texto del documento actualizado correctamente.';
+    }
+}
+
 $ai_settings = get_ai_settings($db);
 $skills_list = $db->query("SELECT * FROM skills_ia ORDER BY id ASC");
+$documentos_list = $db->query("SELECT * FROM documentos_ia ORDER BY id DESC");
+$total_docs = (int)$db->querySingle("SELECT COUNT(*) FROM documentos_ia");
+$activos_docs = (int)$db->querySingle("SELECT COUNT(*) FROM documentos_ia WHERE activo = 1");
 ?>
 
 <div class="page-header">
@@ -279,7 +388,7 @@ $skills_list = $db->query("SELECT * FROM skills_ia ORDER BY id ASC");
                 💡 <em>Puedes agregar nuevos productos, cambiar precios de referencia, actualizar políticas de garantía o incluir nuevas preguntas frecuentes:</em>
             </div>
 
-            <textarea name="ai_knowledge_base" rows="22" style="width:100%;font-family:monospace;font-size:12px;line-height:1.45;padding:14px;border:1px solid var(--border);border-radius:var(--radius-sm);background:#fafafa;color:#0f172a;resize:vertical"><?= h($ai_settings['knowledge']) ?></textarea>
+            <textarea name="ai_knowledge_base" rows="22" style="width:100%;font-family:monospace;font-size:12px;line-height:1.45;padding:14px;border:1px solid var(--border);border-radius:var(--radius-sm);background:#fafafa;color:#0f172a;resize:vertical"><?= h(get_config($db, 'ai_knowledge_base', get_ai_default_knowledge())) ?></textarea>
 
             <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px">
                 <button type="submit" class="btn btn-primary" style="padding:10px 24px;font-size:13px;font-weight:800;background:#2c60a4">
@@ -296,6 +405,122 @@ $skills_list = $db->query("SELECT * FROM skills_ia ORDER BY id ASC");
         </form>
     </div>
 
+</div>
+
+<!-- ========================================================
+     SECCIÓN: ARCHIVOS & DOCUMENTOS DE CONTEXTO EMPRESARIAL
+     ======================================================== -->
+<div style="margin-top:32px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px">
+        <div>
+            <h2 style="margin:0;font-size:20px;color:#0f172a;display:flex;align-items:center;gap:10px">
+                <span>📁</span> Archivos de Contexto & Documentos de la Empresa
+                <span style="font-size:12px;background:#ecfdf5;color:#059669;padding:3px 10px;border-radius:12px;border:1px solid #a7f3d0;font-weight:700">
+                    ● <?= $activos_docs ?> Activos en el Cerebro de la IA
+                </span>
+            </h2>
+            <p style="margin:4px 0 0 0;font-size:13px;color:var(--fg-secondary)">
+                Sube listas de precios, inventarios, políticas de garantía, fichas técnicas o correos de referencia para que Google Gemini y las Skills los consulten antes de redactar.
+            </p>
+        </div>
+        <div>
+            <button type="button" onclick="abrirModalSubirDoc()" class="btn btn-primary" style="background:#059669;font-weight:800;display:flex;align-items:center;gap:8px;box-shadow:0 2px 6px rgba(5,150,105,0.25)">
+                <span>📤 Subir Archivo o Pegar Contenido</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- TARJETA CON TABLA DE DOCUMENTOS SUBIDOS -->
+    <div class="card" style="padding:0;overflow:hidden;border:1px solid var(--border)">
+        <?php if ($total_docs > 0): ?>
+        <div style="overflow-x:auto">
+            <table style="width:100%;border-collapse:collapse;margin:0">
+                <thead>
+                    <tr style="background:#f8fafc;border-bottom:1px solid var(--border)">
+                        <th style="padding:12px 16px;text-align:left;font-size:12px;font-weight:800;color:var(--fg-secondary)">Categoría</th>
+                        <th style="padding:12px 16px;text-align:left;font-size:12px;font-weight:800;color:var(--fg-secondary)">Documento / Título</th>
+                        <th style="padding:12px 16px;text-align:left;font-size:12px;font-weight:800;color:var(--fg-secondary)">Tamaño</th>
+                        <th style="padding:12px 16px;text-align:left;font-size:12px;font-weight:800;color:var(--fg-secondary)">Fecha Subida</th>
+                        <th style="padding:12px 16px;text-align:center;font-size:12px;font-weight:800;color:var(--fg-secondary)">Estado para la IA</th>
+                        <th style="padding:12px 16px;text-align:right;font-size:12px;font-weight:800;color:var(--fg-secondary)">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php 
+                    $cat_badges = [
+                        'precios'    => ['🏷️ Precios & Tarifas', '#fef3c7', '#92400e', '#fde68a'],
+                        'inventario' => ['📦 Inventarios & Stock', '#e0f2fe', '#0369a1', '#bae6fd'],
+                        'politicas'  => ['📋 Políticas & Envíos', '#f3e8ff', '#6b21a8', '#e9d5ff'],
+                        'catalogo'   => ['⚙️ Ficha Técnica', '#ecfdf5', '#065f46', '#a7f3d0'],
+                        'correos'    => ['✉️ Correo de Referencia', '#fff1f2', '#9f1239', '#fecdd3'],
+                        'general'    => ['🏢 General Empresa', '#f1f5f9', '#475569', '#cbd5e1']
+                    ];
+                    while ($d = $documentos_list->fetchArray(SQLITE3_ASSOC)): 
+                        $cinfo = $cat_badges[$d['categoria']] ?? ['🏢 General', '#f1f5f9', '#475569', '#cbd5e1'];
+                        $kb_size = round($d['tamano'] / 1024, 1);
+                    ?>
+                    <tr style="border-bottom:1px solid #f1f5f9;background:<?= $d['activo'] ? '#fff' : '#fcfcfd' ?>">
+                        <td style="padding:14px 16px">
+                            <span class="badge" style="background:<?= $cinfo[1] ?>;color:<?= $cinfo[2] ?>;border:1px solid <?= $cinfo[3] ?>;font-size:11px;font-weight:700">
+                                <?= $cinfo[0] ?>
+                            </span>
+                        </td>
+                        <td style="padding:14px 16px">
+                            <div style="font-weight:700;font-size:13px;color:#0f172a"><?= h($d['titulo']) ?></div>
+                            <div style="font-size:11px;color:var(--fg-secondary);display:flex;align-items:center;gap:6px;margin-top:2px">
+                                <span>📄 <?= h($d['nombre_archivo']) ?></span>
+                                <?php if (file_exists(__DIR__ . '/../' . $d['ruta_archivo'])): ?>
+                                <a href="<?= h($d['ruta_archivo']) ?>" target="_blank" style="color:#2563eb;text-decoration:underline">Descargar original ↗</a>
+                                <?php endif; ?>
+                            </div>
+                        </td>
+                        <td style="padding:14px 16px;font-size:12px;color:var(--fg-secondary)">
+                            <?= $kb_size > 0 ? $kb_size . ' KB' : '—' ?>
+                        </td>
+                        <td style="padding:14px 16px;font-size:12px;color:var(--fg-secondary)">
+                            <?= date('d/m/Y H:i', strtotime($d['fecha_subida'])) ?>
+                        </td>
+                        <td style="padding:14px 16px;text-align:center">
+                            <form method="POST" style="margin:0;display:inline-block">
+                                <input type="hidden" name="toggle_documento_ia" value="1">
+                                <input type="hidden" name="doc_id" value="<?= $d['id'] ?>">
+                                <button type="submit" class="btn btn-sm" style="font-size:11px;padding:3px 10px;font-weight:700;border-radius:12px;<?= $d['activo'] ? 'background:#ecfdf5;color:#059669;border:1px solid #a7f3d0' : 'background:#f1f5f9;color:#64748b;border:1px solid #cbd5e1' ?>" title="Haz clic para activar o pausar este documento del contexto de la IA">
+                                    <?= $d['activo'] ? '● Activo en IA' : '○ Pausado' ?>
+                                </button>
+                            </form>
+                        </td>
+                        <td style="padding:14px 16px;text-align:right">
+                            <div style="display:flex;justify-content:flex-end;gap:8px">
+                                <button type="button" onclick="verDocumentoIA(<?= htmlspecialchars(json_encode($d), ENT_QUOTES, 'UTF-8') ?>)" class="btn btn-secondary btn-sm" style="font-size:11px;padding:4px 10px" title="Ver o editar el texto exacto que lee la IA">
+                                    👁️ Ver Texto
+                                </button>
+                                <form method="POST" style="margin:0;display:inline-block" onsubmit="return confirm('¿Seguro que deseas eliminar este documento del contexto de la IA?');">
+                                    <input type="hidden" name="eliminar_documento_ia" value="1">
+                                    <input type="hidden" name="doc_id" value="<?= $d['id'] ?>">
+                                    <button type="submit" class="btn btn-outline btn-sm" style="font-size:11px;padding:4px 8px;color:#dc2626;border-color:#fca5a5" title="Eliminar documento">
+                                        🗑️
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    <?php endwhile; ?>
+                </tbody>
+            </table>
+        </div>
+        <?php else: ?>
+        <div style="text-align:center;padding:40px 20px;background:#f8fafc">
+            <span style="font-size:42px;display:block;margin-bottom:8px">📂</span>
+            <h4 style="font-size:15px;font-weight:800;color:#0f172a;margin:0 0 6px 0">Aún no has subido documentos adicionales</h4>
+            <p style="font-size:13px;color:var(--fg-secondary);max-width:550px;margin:0 auto 16px auto">
+                Sube listas de precios, inventarios en Excel/CSV, fichas técnicas en PDF o correos reales de la empresa para que Google Gemini y las Skills comerciales redacten con exactitud total.
+            </p>
+            <button type="button" onclick="abrirModalSubirDoc()" class="btn btn-primary btn-sm" style="background:#059669;font-weight:700">
+                📤 Subir tu Primer Documento o Pegar Contenido
+            </button>
+        </div>
+        <?php endif; ?>
+    </div>
 </div>
 
 <!-- ========================================================
@@ -406,6 +631,146 @@ $skills_list = $db->query("SELECT * FROM skills_ia ORDER BY id ASC");
             <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:10px">
                 <button type="button" onclick="document.getElementById('modalNuevaSkill').style.display='none'" class="btn btn-secondary btn-sm">Cancelar</button>
                 <button type="submit" class="btn btn-primary btn-sm" style="background:#2c60a4;font-weight:800;padding:8px 20px">Guardar e Instalar Skill</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ========================================================
+     MODAL 1: SUBIR DOCUMENTO O PEGAR CONTEXTO IA
+     ======================================================== -->
+<div id="modalSubirDocIA" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.65);z-index:9999;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(3px)">
+    <div style="background:#fff;border-radius:12px;max-width:620px;width:100%;box-shadow:0 20px 25px -5px rgba(0,0,0,0.2);overflow:hidden;max-height:92vh;display:flex;flex-direction:column">
+        <div style="background:linear-gradient(135deg, #0f172a 0%, #1e293b 100%);padding:18px 24px;border-bottom:3px solid #059669;display:flex;justify-content:space-between;align-items:center">
+            <h3 style="color:#fff;margin:0;font-size:16px;font-weight:800;display:flex;align-items:center;gap:8px">
+                <span>📁</span> Subir Documento o Información para la IA
+            </h3>
+            <button type="button" onclick="document.getElementById('modalSubirDocIA').style.display='none'" style="background:none;border:none;color:#94a3b8;font-size:22px;cursor:pointer">&times;</button>
+        </div>
+
+        <form method="POST" enctype="multipart/form-data" style="padding:22px;overflow-y:auto;display:flex;flex-direction:column;gap:16px">
+            <input type="hidden" name="subir_documento_ia" value="1">
+            <input type="hidden" name="modo_subida" id="modo_subida_input" value="archivo">
+
+            <!-- SELECTOR DE CATEGORÍA Y TÍTULO -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                <div>
+                    <label style="font-size:12px;font-weight:700;display:block;margin-bottom:4px">Categoría del Contenido:</label>
+                    <select name="categoria" id="doc_categoria" required style="width:100%;font-size:13px;padding:8px;border-radius:6px;border:1px solid #cbd5e1">
+                        <option value="precios">🏷️ Lista de Precios & Tarifas</option>
+                        <option value="inventario">📦 Inventarios & Disponibilidad Stock</option>
+                        <option value="politicas">📋 Políticas Comerciales, Envíos & Garantías</option>
+                        <option value="catalogo">⚙️ Fichas Técnicas & Especificaciones</option>
+                        <option value="correos">✉️ Correos Reales & Modelos de Éxito</option>
+                        <option value="general" selected>🏢 Información General de la Empresa</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size:12px;font-weight:700;display:block;margin-bottom:4px">Título Descriptivo:</label>
+                    <input type="text" name="titulo" id="doc_titulo" required placeholder="ej: Precios Envasadoras 2026 o Stock Medellín" style="width:100%;font-size:13px;padding:8px;border-radius:6px;border:1px solid #cbd5e1">
+                </div>
+            </div>
+
+            <!-- TABS MODO: SUBIR ARCHIVO VS PEGAR TEXTO -->
+            <div>
+                <label style="font-size:12px;font-weight:700;display:block;margin-bottom:6px">¿Cómo deseas agregar la información?</label>
+                <div style="display:flex;gap:8px;background:#f1f5f9;padding:4px;border-radius:8px">
+                    <button type="button" id="tab-btn-archivo" onclick="cambiarModoSubida('archivo')" style="flex:1;padding:8px 12px;font-size:12px;font-weight:700;border:none;border-radius:6px;cursor:pointer;background:#fff;color:#0f172a;box-shadow:0 1px 3px rgba(0,0,0,0.1)">
+                        📎 1. Subir Archivo (PDF, CSV, Excel, TXT, EML)
+                    </button>
+                    <button type="button" id="tab-btn-texto" onclick="cambiarModoSubida('texto')" style="flex:1;padding:8px 12px;font-size:12px;font-weight:600;border:none;border-radius:6px;cursor:pointer;background:transparent;color:#64748b">
+                        📋 2. Pegar Texto o Correo Directo
+                    </button>
+                </div>
+            </div>
+
+            <!-- PANEL 1: SUBIDA DE ARCHIVO -->
+            <div id="panel-modo-archivo" style="background:#f8fafc;border:2px dashed #cbd5e1;border-radius:10px;padding:18px;text-align:center">
+                <input type="file" name="archivo" id="archivo_input" accept=".pdf,.txt,.csv,.tsv,.json,.md,.html,.htm,.eml" style="display:block;margin:0 auto 10px auto;max-width:100%;font-size:13px" onchange="autoCompletarTitulo(this)">
+                <div style="font-size:12px;color:var(--fg-secondary);line-height:1.5">
+                    <strong>Formatos compatibles:</strong> PDF (fichas y catálogos), CSV / TXT / TSV (inventarios y listas de Excel exportadas como CSV), EML / HTML (correos anteriores), Markdown.<br>
+                    <span style="font-size:11px;color:#0369a1">💡 El sistema extraerá el texto automáticamente para que Gemini pueda leerlo sin necesidad de abrir el archivo.</span>
+                </div>
+            </div>
+
+            <!-- PANEL 2: PEGAR TEXTO DIRECTO -->
+            <div id="panel-modo-texto" style="display:none">
+                <label style="font-size:12px;font-weight:700;display:block;margin-bottom:4px">Texto o Correo Electrónico:</label>
+                <textarea name="texto_directo" id="texto_directo_input" rows="8" placeholder="Pega aquí el contenido del correo, lista rápida de precios, especificaciones de una máquina o notas comerciales..." style="width:100%;font-size:12px;padding:10px;border-radius:6px;border:1px solid #cbd5e1;font-family:inherit"></textarea>
+                <span style="font-size:11px;color:var(--fg-secondary)">Ideal para copiar y pegar respuestas frecuentes que das a los clientes o respuestas de proveedores.</span>
+            </div>
+
+            <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid #e2e8f0;padding-top:14px">
+                <div style="font-size:11px;color:var(--fg-secondary)">
+                    📁 Se guardará en <code>uploads/conocimiento/</code>
+                </div>
+                <div style="display:flex;gap:10px">
+                    <button type="button" onclick="document.getElementById('modalSubirDocIA').style.display='none'" class="btn btn-secondary btn-sm">Cancelar</button>
+                    <button type="submit" class="btn btn-primary btn-sm" style="background:#059669;font-weight:800;padding:8px 20px">
+                        📥 Subir e Integrar al Cerebro IA
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ========================================================
+     MODAL 2: VER Y EDITAR TEXTO EXTRAÍDO
+     ======================================================== -->
+<div id="modalVerDocIA" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.65);z-index:9999;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(3px)">
+    <div style="background:#fff;border-radius:12px;max-width:760px;width:100%;box-shadow:0 20px 25px -5px rgba(0,0,0,0.2);overflow:hidden;max-height:92vh;display:flex;flex-direction:column">
+        <div style="background:linear-gradient(135deg, #0f172a 0%, #1e293b 100%);padding:18px 24px;border-bottom:3px solid #2c60a4;display:flex;justify-content:space-between;align-items:center">
+            <div>
+                <h3 style="color:#fff;margin:0;font-size:16px;font-weight:800" id="ver_doc_header_title">
+                    👁️ Contexto del Documento en la IA
+                </h3>
+                <span style="font-size:11px;color:#94a3b8" id="ver_doc_header_sub"></span>
+            </div>
+            <button type="button" onclick="document.getElementById('modalVerDocIA').style.display='none'" style="background:none;border:none;color:#94a3b8;font-size:22px;cursor:pointer">&times;</button>
+        </div>
+
+        <form method="POST" style="padding:22px;overflow-y:auto;display:flex;flex-direction:column;gap:14px">
+            <input type="hidden" name="editar_documento_ia" value="1">
+            <input type="hidden" name="doc_id" id="edit_doc_id" value="">
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                <div>
+                    <label style="font-size:12px;font-weight:700;display:block;margin-bottom:4px">Título:</label>
+                    <input type="text" name="titulo" id="edit_doc_titulo" required style="width:100%;font-size:13px;padding:8px;border-radius:6px;border:1px solid #cbd5e1">
+                </div>
+                <div>
+                    <label style="font-size:12px;font-weight:700;display:block;margin-bottom:4px">Categoría:</label>
+                    <select name="categoria" id="edit_doc_categoria" required style="width:100%;font-size:13px;padding:8px;border-radius:6px;border:1px solid #cbd5e1">
+                        <option value="precios">🏷️ Lista de Precios & Tarifas</option>
+                        <option value="inventario">📦 Inventarios & Disponibilidad Stock</option>
+                        <option value="politicas">📋 Políticas Comerciales, Envíos & Garantías</option>
+                        <option value="catalogo">⚙️ Fichas Técnicas & Especificaciones</option>
+                        <option value="correos">✉️ Correos Reales & Modelos de Éxito</option>
+                        <option value="general">🏢 Información General de la Empresa</option>
+                    </select>
+                </div>
+            </div>
+
+            <div>
+                <label style="font-size:12px;font-weight:700;display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+                    <span>Texto que lee Google Gemini & las Skills Comerciales:</span>
+                    <span style="font-size:11px;color:var(--fg-secondary)" id="edit_doc_chars"></span>
+                </label>
+                <textarea name="texto_extraido" id="edit_doc_texto" rows="14" required style="width:100%;font-size:12px;padding:12px;border-radius:6px;border:1px solid #cbd5e1;font-family:monospace;line-height:1.45;background:#f8fafc"></textarea>
+                <p style="font-size:11px;color:var(--fg-secondary);margin:4px 0 0 0">
+                    Puedes corregir, agregar o pulir datos directamente aquí. Este es el texto exacto que se le suministra a la IA cuando genera correos y mensajes de WhatsApp.
+                </p>
+            </div>
+
+            <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid #e2e8f0;padding-top:12px">
+                <span id="ver_doc_enlace_descarga" style="font-size:12px"></span>
+                <div style="display:flex;gap:10px">
+                    <button type="button" onclick="document.getElementById('modalVerDocIA').style.display='none'" class="btn btn-secondary btn-sm">Cerrar</button>
+                    <button type="submit" class="btn btn-primary btn-sm" style="background:#2c60a4;font-weight:800;padding:8px 20px">
+                        💾 Guardar Cambios en el Texto
+                    </button>
+                </div>
             </div>
         </form>
     </div>
@@ -664,5 +1029,106 @@ function copiarSimulacion() {
     navigator.clipboard.writeText(msg).then(() => {
         alert('¡Mensaje copiado al portapapeles!');
     });
+}
+
+// FUNCIONES PARA GESTIÓN DE DOCUMENTOS Y ARCHIVOS DE CONTEXTO IA
+function abrirModalSubirDoc() {
+    cambiarModoSubida('archivo');
+    var tit = document.getElementById('doc_titulo');
+    var arch = document.getElementById('archivo_input');
+    var txt = document.getElementById('texto_directo_input');
+    if (tit) tit.value = '';
+    if (arch) arch.value = '';
+    if (txt) txt.value = '';
+    document.getElementById('modalSubirDocIA').style.display = 'flex';
+}
+
+function cambiarModoSubida(modo) {
+    var inputModo = document.getElementById('modo_subida_input');
+    var btnArch = document.getElementById('tab-btn-archivo');
+    var btnText = document.getElementById('tab-btn-texto');
+    var panArch = document.getElementById('panel-modo-archivo');
+    var panText = document.getElementById('panel-modo-texto');
+    var fileInput = document.getElementById('archivo_input');
+    var textInput = document.getElementById('texto_directo_input');
+
+    if (!inputModo || !btnArch || !btnText) return;
+
+    inputModo.value = modo;
+
+    if (modo === 'archivo') {
+        btnArch.style.background = '#fff';
+        btnArch.style.color = '#0f172a';
+        btnArch.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
+        btnArch.style.fontWeight = '700';
+
+        btnText.style.background = 'transparent';
+        btnText.style.color = '#64748b';
+        btnText.style.boxShadow = 'none';
+        btnText.style.fontWeight = '600';
+
+        panArch.style.display = 'block';
+        panText.style.display = 'none';
+        if (fileInput) fileInput.required = true;
+        if (textInput) textInput.required = false;
+    } else {
+        btnText.style.background = '#fff';
+        btnText.style.color = '#0f172a';
+        btnText.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
+        btnText.style.fontWeight = '700';
+
+        btnArch.style.background = 'transparent';
+        btnArch.style.color = '#64748b';
+        btnArch.style.boxShadow = 'none';
+        btnArch.style.fontWeight = '600';
+
+        panArch.style.display = 'none';
+        panText.style.display = 'block';
+        if (fileInput) fileInput.required = false;
+        if (textInput) textInput.required = true;
+    }
+}
+
+function autoCompletarTitulo(input) {
+    if (input.files && input.files[0]) {
+        var tituloInput = document.getElementById('doc_titulo');
+        if (tituloInput && !tituloInput.value.trim()) {
+            var fileName = input.files[0].name.replace(/\.[^/.]+$/, "");
+            tituloInput.value = fileName;
+        }
+    }
+}
+
+function verDocumentoIA(doc) {
+    if (!doc) return;
+    document.getElementById('edit_doc_id').value = doc.id;
+    document.getElementById('edit_doc_titulo').value = doc.titulo || '';
+    document.getElementById('edit_doc_categoria').value = doc.categoria || 'general';
+    document.getElementById('edit_doc_texto').value = doc.texto_extraido || '';
+    
+    var chars = (doc.texto_extraido || '').length;
+    var charsSpan = document.getElementById('edit_doc_chars');
+    if (charsSpan) {
+        charsSpan.innerText = chars.toLocaleString() + ' caracteres extraídos';
+    }
+    
+    var titleH = document.getElementById('ver_doc_header_title');
+    if (titleH) titleH.innerText = '👁️ ' + (doc.titulo || 'Documento');
+    
+    var subH = document.getElementById('ver_doc_header_sub');
+    if (subH) {
+        subH.innerText = 'Archivo original: ' + (doc.nombre_archivo || 'Texto directo') + ' • Subido: ' + (doc.fecha_subida || '');
+    }
+    
+    var downloadSpan = document.getElementById('ver_doc_enlace_descarga');
+    if (downloadSpan) {
+        if (doc.ruta_archivo) {
+            downloadSpan.innerHTML = '<a href="' + encodeURI(doc.ruta_archivo) + '" target="_blank" style="color:#2563eb;text-decoration:underline;font-weight:600">📥 Descargar archivo original (' + (doc.nombre_archivo || 'archivo') + ') ↗</a>';
+        } else {
+            downloadSpan.innerHTML = '<span style="color:#64748b">Texto incorporado directamente</span>';
+        }
+    }
+
+    document.getElementById('modalVerDocIA').style.display = 'flex';
 }
 </script>
