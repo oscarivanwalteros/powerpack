@@ -54,6 +54,7 @@ $total_count = (int)$db->querySingle("SELECT COUNT(*) FROM contactos");
 $count_alta = (int)$db->querySingle("SELECT COUNT(*) FROM contactos WHERE prioridad = 'alta'");
 $count_media = (int)$db->querySingle("SELECT COUNT(*) FROM contactos WHERE prioridad = 'media' OR prioridad IS NULL OR prioridad = ''");
 $count_baja = (int)$db->querySingle("SELECT COUNT(*) FROM contactos WHERE prioridad = 'baja'");
+$count_demos_contactos = (int)$db->querySingle("SELECT COUNT(*) FROM contactos WHERE fuente = 'Datos de Prueba (Demo)'");
 $sectores = $db->query("SELECT DISTINCT sector FROM contactos WHERE sector IS NOT NULL AND sector != '' ORDER BY sector ASC");
 ?>
 
@@ -62,12 +63,25 @@ $sectores = $db->query("SELECT DISTINCT sector FROM contactos WHERE sector IS NO
         <h1>Directorio de Contactos</h1>
         <p>Administra tus prospectos, jerarquía de prioridad comercial y seguimiento</p>
     </div>
-    <div style="display:flex;gap:10px">
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
         <a href="?page=importar" class="btn btn-primary btn-sm" style="background:#2c60a4" title="Subir base de datos de feria o archivo Excel">📤 Subir Excel / CSV (Feria)</a>
-        <a href="?page=exportar_contactos" class="btn btn-secondary btn-sm" title="Descargar en Excel">📥 Exportar CSV</a>
+        <a href="?page=exportar_contactos&delimitador=coma" class="btn btn-secondary btn-sm" title="Descargar archivo CSV estándar delimitado por comas">📥 CSV (Comas ,)</a>
+        <a href="?page=exportar_contactos&delimitador=puntocoma" class="btn btn-secondary btn-sm" title="Descargar archivo CSV optimizado para Microsoft Excel">📥 Excel (Punto y coma ;)</a>
         <a href="?page=nuevo" class="btn btn-secondary btn-sm">+ Nuevo Contacto</a>
     </div>
 </div>
+
+<?php if ($count_demos_contactos > 0): ?>
+<div class="alert alert-info" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;flex-wrap:wrap;gap:10px">
+    <span>🧪 <strong>Modo Demostración Activo:</strong> Hay <?= $count_demos_contactos ?> prospectos de prueba cargados. Puedes usarlos para simular cotizaciones y redacción con IA.</span>
+    <form method="POST" style="margin:0" onsubmit="return confirm('¿Deseas eliminar los <?= $count_demos_contactos ?> prospectos de demostración para dejar la base de datos limpia?');">
+        <input type="hidden" name="borrar_datos_demo" value="1">
+        <button type="submit" class="btn btn-sm" style="background:#fee2e2;border:1px solid #fca5a5;color:#991b1b;font-weight:700;padding:5px 12px;font-size:11px">
+            🗑️ Borrar los <?= $count_demos_contactos ?> Clientes Demo
+        </button>
+    </form>
+</div>
+<?php endif; ?>
 
 <?php if ($fuente_filtro): ?>
 <div class="alert alert-info" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af">

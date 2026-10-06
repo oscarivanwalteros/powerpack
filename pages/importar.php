@@ -331,6 +331,59 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ejecutar_importacion'
 </div>
 <?php endif; ?>
 
+<?php
+$count_demo_actual = (int)$db->querySingle("SELECT COUNT(*) FROM contactos WHERE fuente = 'Datos de Prueba (Demo)'");
+?>
+
+<!-- ========================================================
+     SECCIÓN: HOJA DE PRUEBA Y DATOS DE DEMOSTRACIÓN (1 CLIC)
+     ======================================================== -->
+<div class="card" style="margin-bottom:24px;border:1px solid #bfdbfe;background:linear-gradient(135deg, #f0f9ff 0%, #ffffff 100%)">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;border-bottom:1px solid #e0f2fe;padding-bottom:14px;margin-bottom:14px">
+        <div style="display:flex;align-items:center;gap:12px">
+            <span style="font-size:28px">🧪</span>
+            <div>
+                <h3 style="margin:0;font-size:16px;color:#0369a1;font-weight:800">
+                    Entorno de Pruebas: Clientes de Demostración para Power Pack
+                </h3>
+                <p style="margin:2px 0 0 0;font-size:12px;color:#0284c7">
+                    Pon a prueba el pipeline, las prioridades, las cotizaciones y la redacción con IA con prospectos del sector de empaque y maquinaria.
+                </p>
+            </div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <a href="?page=descargar_hoja_prueba&delimitador=coma" class="btn btn-secondary btn-sm" title="Descargar archivo CSV delimitado por comas" style="background:#fff;border-color:#bae6fd;color:#0369a1;font-weight:700">
+                📥 Descargar Hoja Prueba (Comas ,)
+            </a>
+            <a href="?page=descargar_hoja_prueba&delimitador=puntocoma" class="btn btn-secondary btn-sm" title="Descargar archivo CSV para Microsoft Excel" style="background:#fff;border-color:#bae6fd;color:#0369a1;font-weight:700">
+                📥 Descargar para Excel (Punto y coma ;)
+            </a>
+        </div>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px">
+        <div style="font-size:12px;color:var(--fg-secondary);max-width:650px;line-height:1.5">
+            Incluye 12 industrias colombianas (Lácteos, Snacks, Café, Confitería, Cosmética, Pulpa de Frutas, Flow Pack) con requerimientos reales para evaluar la plataforma antes de cargar tu base de datos definitiva.
+        </div>
+        <div style="display:flex;gap:10px;align-items:center">
+            <form method="POST" style="margin:0">
+                <input type="hidden" name="cargar_datos_demo" value="1">
+                <button type="submit" class="btn btn-primary btn-sm" style="background:#059669;font-weight:800;padding:8px 16px">
+                    ⚡ 1-Clic: Cargar 12 Clientes Demo Ahora
+                </button>
+            </form>
+            <?php if ($count_demo_actual > 0): ?>
+            <form method="POST" style="margin:0" onsubmit="return confirm('¿Eliminar todos los <?= $count_demo_actual ?> prospectos de demostración cargados?');">
+                <input type="hidden" name="borrar_datos_demo" value="1">
+                <button type="submit" class="btn btn-outline btn-sm" style="color:#dc2626;border-color:#fca5a5;padding:8px 14px;font-weight:700" title="Borrar datos de prueba">
+                    🗑️ Borrar los <?= $count_demo_actual ?> Clientes Demo
+                </button>
+            </form>
+            <?php endif; ?>
+        </div>
+    </div>
+</div>
+
 <!-- ==========================================
      PASO 1: SELECCIONAR ARCHIVO O PEGAR EXCEL
      ========================================== -->

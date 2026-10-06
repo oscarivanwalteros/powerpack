@@ -204,6 +204,113 @@ $plantillas_email = $db->query("SELECT * FROM plantillas WHERE tipo = 'email' OR
     </div>
 </div>
 
+<!-- ========================================================
+     RESPALDO COMPLETO & MANTENIMIENTO MENSUAL DE LA BASE DE DATOS
+     ======================================================== -->
+<div style="margin-top:28px">
+    <div style="margin-bottom:14px">
+        <h2 style="margin:0;font-size:18px;color:#0f172a;display:flex;align-items:center;gap:10px">
+            <span>💾</span> Respaldos, Exportación Mensual & Mantenimiento de la Base de Datos
+        </h2>
+        <p style="margin:4px 0 0 0;font-size:13px;color:var(--fg-secondary)">
+            Descarga copias de seguridad de tus contactos y cotizaciones en Excel/CSV y gestiona la limpieza periódica de la plataforma.
+        </p>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1.1fr 1fr;gap:24px">
+        
+        <!-- TARJETA: DESCARGAR RESPALDOS COMPLETOS -->
+        <div style="background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:22px;box-shadow:var(--shadow-sm);border-top:3px solid #059669">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+                <span style="font-size:24px">📥</span>
+                <div>
+                    <h3 style="font-size:16px;font-weight:800;margin:0;color:#065f46">Descargar Respaldo Completo</h3>
+                    <p style="font-size:12px;color:var(--fg-secondary);margin:2px 0 0 0">Exporta todos los datos comerciales en archivo plano o base de datos</p>
+                </div>
+            </div>
+
+            <p style="font-size:13px;color:var(--fg-secondary);line-height:1.5;margin-bottom:16px">
+                Te permite descargar un informe consolidado con <strong>todos los campos comerciales</strong> (nombres, empresas, NIT, teléfonos, WhatsApp, correos, ciudades, sectores, nivel de interés, prioridades y requerimientos).
+            </p>
+
+            <div style="display:flex;flex-direction:column;gap:10px">
+                <a href="?page=exportar_respaldo_completo&delimitador=coma" class="btn btn-secondary" style="display:flex;align-items:center;justify-content:space-between;padding:11px 16px;font-weight:700;font-size:13px">
+                    <span>📄 1. Exportar Respaldo CSV (Delimitado por Comas ,)</span>
+                    <span style="font-size:11px;background:#f1f5f9;padding:3px 8px;border-radius:4px;color:#475569">CSV Estándar</span>
+                </a>
+                <a href="?page=exportar_respaldo_completo&delimitador=puntocoma" class="btn btn-secondary" style="display:flex;align-items:center;justify-content:space-between;padding:11px 16px;font-weight:700;font-size:13px">
+                    <span>📊 2. Exportar Respaldo para Excel (Punto y coma ;)</span>
+                    <span style="font-size:11px;background:#f1f5f9;padding:3px 8px;border-radius:4px;color:#475569">Excel / LATAM</span>
+                </a>
+                <?php if (($_SESSION['user_rol'] ?? '') === 'admin'): ?>
+                <a href="?page=descargar_bd_sqlite" class="btn btn-secondary" style="display:flex;align-items:center;justify-content:space-between;padding:11px 16px;font-weight:700;font-size:13px;border-color:#cbd5e1;background:#f8fafc">
+                    <span>💾 3. Descargar Archivo Maestro SQLite (.db)</span>
+                    <span style="font-size:11px;background:#e2e8f0;padding:3px 8px;border-radius:4px;color:#334155">Respaldo Total</span>
+                </a>
+                <?php endif; ?>
+            </div>
+
+            <div style="background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px;padding:12px;margin-top:16px;font-size:11px;color:#065f46;line-height:1.5">
+                ✓ <strong>Garantía de Respaldo:</strong> Descarga siempre una copia antes de realizar una limpieza mensual para tener tu historial respaldado en tu computador.
+            </div>
+        </div>
+
+        <!-- TARJETA: MANTENIMIENTO Y LIMPIEZA CONTROLADA -->
+        <div style="background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:22px;box-shadow:var(--shadow-sm);border-top:3px solid #dc2626">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+                <span style="font-size:24px">🧹</span>
+                <div>
+                    <h3 style="font-size:16px;font-weight:800;margin:0;color:#991b1b">Limpieza Controlada de Base de Datos</h3>
+                    <p style="font-size:12px;color:var(--fg-secondary);margin:2px 0 0 0">Purga transaccional mensual o reinicio de campaña</p>
+                </div>
+            </div>
+
+            <p style="font-size:12px;color:var(--fg-secondary);line-height:1.5;margin-bottom:14px">
+                Permite vaciar los registros transaccionales para iniciar un nuevo ciclo o campaña, <strong>sin alterar tus usuarios, contraseñas, configuraciones SMTP ni el conocimiento de la IA</strong>.
+            </p>
+
+            <form method="POST" onsubmit="return confirm('⚠️ ATENCIÓN: Esta acción limpiará los datos seleccionados de la plataforma. ¿Confirmas que ya descargaste tu respaldo?');">
+                <input type="hidden" name="limpiar_base_datos" value="1">
+
+                <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px;margin-bottom:14px;display:flex;flex-direction:column;gap:8px">
+                    <strong style="font-size:12px;color:#0f172a">Selecciona qué elementos deseas limpiar:</strong>
+                    <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;cursor:pointer">
+                        <input type="checkbox" name="limpiar_contactos" value="1" checked>
+                        <span>👥 Contactos y registros de seguimiento</span>
+                    </label>
+                    <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;cursor:pointer">
+                        <input type="checkbox" name="limpiar_negocios" value="1" checked>
+                        <span>📋 Oportunidades y Pipeline comercial</span>
+                    </label>
+                    <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;cursor:pointer">
+                        <input type="checkbox" name="limpiar_cotizaciones" value="1" checked>
+                        <span>📄 Historial de cotizaciones generadas</span>
+                    </label>
+                    <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;cursor:pointer">
+                        <input type="checkbox" name="limpiar_empresas" value="1">
+                        <span>🏢 Cuentas B2B (Fábricas creadas)</span>
+                    </label>
+                </div>
+
+                <div style="margin-bottom:14px">
+                    <label style="font-size:12px;font-weight:700;display:block;margin-bottom:4px;color:#991b1b">
+                        🔒 Código de Confirmación de Seguridad:
+                    </label>
+                    <input type="text" name="palabra_seguridad" required placeholder="Escribe exactamente LIMPIAR" style="width:100%;font-size:13px;padding:9px;border:1px solid #fca5a5;border-radius:6px;font-family:monospace;text-transform:uppercase">
+                    <span style="font-size:11px;color:var(--fg-secondary);display:block;margin-top:4px">
+                        Escribe la palabra <code>LIMPIAR</code> en mayúsculas para activar el botón.
+                    </span>
+                </div>
+
+                <button type="submit" class="btn btn-outline" style="width:100%;padding:10px 14px;color:#dc2626;border-color:#fca5a5;background:#fef2f2;font-weight:800;font-size:13px">
+                    🗑️ Ejecutar Limpieza de la Base de Datos
+                </button>
+            </form>
+        </div>
+
+    </div>
+</div>
+
 <!-- MODAL NUEVA PLANTILLA -->
 <div id="modalPlantilla" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.6);z-index:200;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)">
     <div style="background:#fff;border-radius:var(--radius);max-width:550px;width:100%;padding:24px;box-shadow:var(--shadow-lg)">

@@ -528,3 +528,439 @@ $pipeline_etapas = [
     ['id' => 'ganado', 'nombre' => 'Cerrado Ganado', 'color' => '#059669', 'prob' => 100],
     ['id' => 'perdido', 'nombre' => 'Cerrado Perdido', 'color' => '#ef4444', 'prob' => 0],
 ];
+
+// ========================================================
+// DATOS DE PRUEBA / DEMOSTRACIÓN (MAQUINARIA & EMPAQUE COLOMBIA)
+// ========================================================
+function get_demo_contacts_data() {
+    return [
+        [
+            'nombre' => 'Carlos Andrés',
+            'apellido' => 'Gómez Restrepo',
+            'empresa' => 'Lácteos El Manantial S.A.S.',
+            'nit' => '890.334.221-0',
+            'cargo' => 'Gerente de Planta',
+            'telefono' => '+57 320 555 1234',
+            'email' => 'cgomez@lacteosmanantial.co',
+            'ciudad' => 'Medellín',
+            'direccion' => 'Carrera 45 # 20-10, Zona Industrial',
+            'sector' => 'Alimentos & Lácteos',
+            'interes' => 3,
+            'prioridad' => 'alta',
+            'etapa' => 'calificado',
+            'notas' => 'Interesado en selladora continua vertical para bolsas de queso de 500g y fechador térmico. Presupuesto disponible para entrega rápida.'
+        ],
+        [
+            'nombre' => 'María Camila',
+            'apellido' => 'Restrepo Valencia',
+            'empresa' => 'Alimentos & Snacks NutriValle',
+            'nit' => '901.888.777-3',
+            'cargo' => 'Directora de Compras',
+            'telefono' => '+57 315 444 8899',
+            'email' => 'compras@nutrivalle.com',
+            'ciudad' => 'Cali',
+            'direccion' => 'Vía Yumbo Km 4, Parque Industrial',
+            'sector' => 'Snacks & Panadería',
+            'interes' => 3,
+            'prioridad' => 'alta',
+            'etapa' => 'cotizacion',
+            'notas' => 'Requiere cotización formal de envasadora vertical para papas fritas con dosificador multicabezal de 10 balanzas. Cierre proyectado este mes.'
+        ],
+        [
+            'nombre' => 'Jorge Eduardo',
+            'apellido' => 'Morales Silva',
+            'empresa' => 'Laboratorios BioDerma Colombia',
+            'nit' => '900.567.123-4',
+            'cargo' => 'Jefe de Producción',
+            'telefono' => '+57 310 987 6543',
+            'email' => 'jmorales@bioderma.com.co',
+            'ciudad' => 'Bogotá',
+            'direccion' => 'Calle 100 # 19-61, Edificio Horizonte',
+            'sector' => 'Cosmética & Farmacéutica',
+            'interes' => 2,
+            'prioridad' => 'media',
+            'etapa' => 'contacto_inicial',
+            'notas' => 'Busca llenadora de líquidos de 4 boquillas para cremas corporales y tónicos capilares. Pide enviar video de operación y ficha técnica.'
+        ],
+        [
+            'nombre' => 'Ana Sofía',
+            'apellido' => 'Cardona Pineda',
+            'empresa' => 'Café Selecto San Jerónimo',
+            'nit' => '800.222.111-9',
+            'cargo' => 'Gerente General & Propietaria',
+            'telefono' => '+57 314 333 2211',
+            'email' => 'gerencia@cafesanjeronimo.com',
+            'ciudad' => 'Pereira',
+            'direccion' => 'Avenida Circunvalar # 12-40',
+            'sector' => 'Café & Agroindustria',
+            'interes' => 3,
+            'prioridad' => 'alta',
+            'etapa' => 'negociacion',
+            'notas' => 'Empacadora al vacío doble campana para café especial en grano y molido en presentaciones de 500g y 1kg. Requiere entrega en Risaralda.'
+        ],
+        [
+            'nombre' => 'Ricardo',
+            'apellido' => 'Silva Benítez',
+            'empresa' => 'Frigorífico & Embutidos La Sabana',
+            'nit' => '901.122.334-5',
+            'cargo' => 'Gerente de Operaciones',
+            'telefono' => '+57 318 777 6655',
+            'email' => 'rsilva@carnicoslasabana.co',
+            'ciudad' => 'Chía',
+            'direccion' => 'Autopista Norte Km 22, Vereda Bojacá',
+            'sector' => 'Cárnicos & Alimentos',
+            'interes' => 2,
+            'prioridad' => 'alta',
+            'etapa' => 'contacto_inicial',
+            'notas' => 'Termoformadora para empaque de tocineta y salchichas al vacío. Solicita visita técnica a showroom en Bogotá para pruebas con su producto.'
+        ],
+        [
+            'nombre' => 'Valentina',
+            'apellido' => 'Duque Carvajal',
+            'empresa' => 'Galletas & Panadería Imperial',
+            'nit' => '890.776.543-2',
+            'cargo' => 'Gerente Comercial',
+            'telefono' => '+57 312 666 9988',
+            'email' => 'vduque@panaderiaimperial.com',
+            'ciudad' => 'Bucaramanga',
+            'direccion' => 'Carrera 27 # 45-18',
+            'sector' => 'Panificación & Galletas',
+            'interes' => 2,
+            'prioridad' => 'media',
+            'etapa' => 'lead',
+            'notas' => 'Interesada en máquina flow pack horizontal para empaque individual de galletas y ponqués. Pide propuesta económica.'
+        ],
+        [
+            'nombre' => 'Fernando',
+            'apellido' => 'Castro Quintero',
+            'empresa' => 'Agroquímicos & Fertilizantes del Norte',
+            'nit' => '900.445.889-1',
+            'cargo' => 'Director Técnico',
+            'telefono' => '+57 301 222 4455',
+            'email' => 'fcastro@agronorte.com.co',
+            'ciudad' => 'Barranquilla',
+            'direccion' => 'Vía 40 # 77-120, Zona Franca',
+            'sector' => 'Químico & Agropecuario',
+            'interes' => 1,
+            'prioridad' => 'baja',
+            'etapa' => 'lead',
+            'notas' => 'Llenadora lineal para garrafas de 4 y 20 litros de fertilizantes agrícolas. Contactar a final de mes para revisión técnica.'
+        ],
+        [
+            'nombre' => 'Diana Marcela',
+            'apellido' => 'Hoyos Arango',
+            'empresa' => 'Pulpas Naturales del Eje',
+            'nit' => '801.334.998-7',
+            'cargo' => 'Gerente de Calidad',
+            'telefono' => '+57 316 888 1122',
+            'email' => 'dhoyos@pulpasnaturaleje.com',
+            'ciudad' => 'Armenia',
+            'direccion' => 'Calle 21 # 14-25',
+            'sector' => 'Frutas & Agroindustria',
+            'interes' => 3,
+            'prioridad' => 'alta',
+            'etapa' => 'calificado',
+            'notas' => 'Dosificadora neumática de pistón para pulpa de fruta congelada y selladora de pedal para trabajo pesado. Desea asesoría técnica.'
+        ],
+        [
+            'nombre' => 'Héctor Fabio',
+            'apellido' => 'Valencia Osorio',
+            'empresa' => 'Dulces & Confitería La Candelaria',
+            'nit' => '900.678.901-2',
+            'cargo' => 'Jefe de Mantenimiento',
+            'telefono' => '+57 311 444 7788',
+            'email' => 'hvalencia@dulcescandelaria.com',
+            'ciudad' => 'Manizales',
+            'direccion' => 'Parque Industrial Juanchito Lote 12',
+            'sector' => 'Confitería & Alimentos',
+            'interes' => 2,
+            'prioridad' => 'media',
+            'etapa' => 'contacto_inicial',
+            'notas' => 'Túnel de termoencogido y selladora en L para empaques promocionales de caramelos. Necesita dimensiones de cámara.'
+        ],
+        [
+            'nombre' => 'Andrea Patricia',
+            'apellido' => 'Pardo Botero',
+            'empresa' => 'Cervecería Artesanal Montaña Dorada',
+            'nit' => '901.234.567-8',
+            'cargo' => 'Socia Fundadora',
+            'telefono' => '+57 317 555 3344',
+            'email' => 'apardo@montanadorada.co',
+            'ciudad' => 'Villa de Leyva',
+            'direccion' => 'Km 2 Vía Arcabuco',
+            'sector' => 'Bebidas & Licores',
+            'interes' => 1,
+            'prioridad' => 'baja',
+            'etapa' => 'lead',
+            'notas' => 'Etiquetadora de botellas de vidrio cilíndricas y taponadora manual/semiautomática. Proyecto a mediano plazo.'
+        ],
+        [
+            'nombre' => 'Mauricio',
+            'apellido' => 'Quintero Giraldo',
+            'empresa' => 'Plásticos & Empaques Flexibles del Valle',
+            'nit' => '890.111.444-6',
+            'cargo' => 'Gerente General',
+            'telefono' => '+57 313 777 0011',
+            'email' => 'mquintero@plasticosvalle.com',
+            'ciudad' => 'Yumbo',
+            'direccion' => 'Zona Industrial La Herradura',
+            'sector' => 'Envases & Plásticos',
+            'interes' => 2,
+            'prioridad' => 'media',
+            'etapa' => 'contacto_inicial',
+            'notas' => 'Codificadora inkjet industrial continuo para impresión de lote, fecha y hora en bobinas de polietileno. Solicita demo técnica.'
+        ],
+        [
+            'nombre' => 'Lucía',
+            'apellido' => 'Mendoza Cárdenas',
+            'empresa' => 'Especias & Condimentos El Condado',
+            'nit' => '900.890.123-4',
+            'cargo' => 'Coordinadora de Compras',
+            'telefono' => '+57 319 999 5566',
+            'email' => 'lmendoza@especiascondado.com',
+            'ciudad' => 'Ibagué',
+            'direccion' => 'Carrera 5 # 38-50',
+            'sector' => 'Condimentos & Especias',
+            'interes' => 3,
+            'prioridad' => 'alta',
+            'etapa' => 'calificado',
+            'notas' => 'Dosificadora por tornillo sinfín (auger filler) para polvos finos en bolsas doypack. Urgente para ampliación de línea de producción.'
+        ]
+    ];
+}
+
+// Inserción en 1-clic de datos de prueba
+function insertar_contactos_demo($db) {
+    $demos = get_demo_contacts_data();
+    $creados = 0;
+    
+    $db->exec('BEGIN TRANSACTION');
+    try {
+        foreach ($demos as $d) {
+            $empresa_id = null;
+            if (!empty($d['empresa'])) {
+                $stmt_e = $db->prepare("SELECT id FROM empresas WHERE LOWER(nombre) = LOWER(?) LIMIT 1");
+                $stmt_e->bindValue(1, $d['empresa'], SQLITE3_TEXT);
+                $res_e = $stmt_e->execute();
+                $row_e = $res_e->fetchArray(SQLITE3_ASSOC);
+                if ($row_e) {
+                    $empresa_id = (int)$row_e['id'];
+                } else {
+                    $stmt_ne = $db->prepare("INSERT INTO empresas (nombre, nit, ciudad, direccion, telefono, email, sector, fecha_creacion) VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))");
+                    $stmt_ne->bindValue(1, $d['empresa'], SQLITE3_TEXT);
+                    $stmt_ne->bindValue(2, $d['nit'], SQLITE3_TEXT);
+                    $stmt_ne->bindValue(3, $d['ciudad'], SQLITE3_TEXT);
+                    $stmt_ne->bindValue(4, $d['direccion'], SQLITE3_TEXT);
+                    $stmt_ne->bindValue(5, $d['telefono'], SQLITE3_TEXT);
+                    $stmt_ne->bindValue(6, $d['email'], SQLITE3_TEXT);
+                    $stmt_ne->bindValue(7, $d['sector'], SQLITE3_TEXT);
+                    $stmt_ne->execute();
+                    $empresa_id = (int)$db->lastInsertRowID();
+                }
+            }
+
+            // Verificar si el contacto ya existe por email
+            $stmt_c = $db->prepare("SELECT id FROM contactos WHERE LOWER(email) = LOWER(?) LIMIT 1");
+            $stmt_c->bindValue(1, $d['email'], SQLITE3_TEXT);
+            $res_c = $stmt_c->execute();
+            if ($res_c->fetchArray(SQLITE3_ASSOC)) {
+                continue;
+            }
+
+            // Insertar contacto con etiqueta de demostración
+            $stmt_ins = $db->prepare("INSERT INTO contactos (empresa_id, nombre, apellido, email, telefono, empresa, cargo, ciudad, direccion, sector, fuente, etapa, interes, prioridad, notas, fecha_creacion, ultima_actividad) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Datos de Prueba (Demo)', ?, ?, ?, ?, datetime('now'), datetime('now'))");
+            $stmt_ins->bindValue(1, $empresa_id, SQLITE3_INTEGER);
+            $stmt_ins->bindValue(2, $d['nombre'], SQLITE3_TEXT);
+            $stmt_ins->bindValue(3, $d['apellido'], SQLITE3_TEXT);
+            $stmt_ins->bindValue(4, $d['email'], SQLITE3_TEXT);
+            $stmt_ins->bindValue(5, $d['telefono'], SQLITE3_TEXT);
+            $stmt_ins->bindValue(6, $d['empresa'], SQLITE3_TEXT);
+            $stmt_ins->bindValue(7, $d['cargo'], SQLITE3_TEXT);
+            $stmt_ins->bindValue(8, $d['ciudad'], SQLITE3_TEXT);
+            $stmt_ins->bindValue(9, $d['direccion'], SQLITE3_TEXT);
+            $stmt_ins->bindValue(10, $d['sector'], SQLITE3_TEXT);
+            $stmt_ins->bindValue(11, $d['etapa'], SQLITE3_TEXT);
+            $stmt_ins->bindValue(12, $d['interes'], SQLITE3_INTEGER);
+            $stmt_ins->bindValue(13, $d['prioridad'], SQLITE3_TEXT);
+            $stmt_ins->bindValue(14, $d['notas'], SQLITE3_TEXT);
+            $stmt_ins->execute();
+            $cid = (int)$db->lastInsertRowID();
+            $creados++;
+
+            // Crear negocio estimado en el pipeline
+            $monto_estimado = ($d['interes'] === 3) ? rand(25000000, 75000000) : rand(12000000, 30000000);
+            $stmt_neg = $db->prepare("INSERT INTO negocios (contacto_id, empresa_id, nombre, monto, etapa, probabilidad, descripcion, fecha_cierre, ultima_actividad) VALUES (?, ?, ?, ?, ?, 50, ?, date('now', '+25 day'), datetime('now'))");
+            $stmt_neg->bindValue(1, $cid, SQLITE3_INTEGER);
+            $stmt_neg->bindValue(2, $empresa_id, SQLITE3_INTEGER);
+            $stmt_neg->bindValue(3, "Maquinaria para " . $d['empresa'], SQLITE3_TEXT);
+            $stmt_neg->bindValue(4, $monto_estimado, SQLITE3_FLOAT);
+            $stmt_neg->bindValue(5, $d['etapa'], SQLITE3_TEXT);
+            $stmt_neg->bindValue(6, $d['notas'], SQLITE3_TEXT);
+            $stmt_neg->execute();
+
+            // Actividad inicial registrada
+            $stmt_act = $db->prepare("INSERT INTO actividades (contacto_id, empresa_id, tipo, asunto, descripcion, completada) VALUES (?, ?, 'nota', 'Prospecto Demo Cargado', ?, 1)");
+            $stmt_act->bindValue(1, $cid, SQLITE3_INTEGER);
+            $stmt_act->bindValue(2, $empresa_id, SQLITE3_INTEGER);
+            $stmt_act->bindValue(3, $d['notas'], SQLITE3_TEXT);
+            $stmt_act->execute();
+        }
+        $db->exec('COMMIT');
+        return $creados;
+    } catch (Exception $e) {
+        $db->exec('ROLLBACK');
+        return false;
+    }
+}
+
+// Borrado selectivo de datos de demostración
+function borrar_contactos_demo($db) {
+    $db->exec('BEGIN TRANSACTION');
+    try {
+        $res = $db->query("SELECT id, empresa_id FROM contactos WHERE fuente = 'Datos de Prueba (Demo)'");
+        $contactos_ids = [];
+        $empresas_ids = [];
+        while ($row = $res->fetchArray(SQLITE3_ASSOC)) {
+            $contactos_ids[] = (int)$row['id'];
+            if (!empty($row['empresa_id'])) {
+                $empresas_ids[] = (int)$row['empresa_id'];
+            }
+        }
+
+        if (!empty($contactos_ids)) {
+            $c_list = implode(',', $contactos_ids);
+            $db->exec("DELETE FROM actividades WHERE contacto_id IN ($c_list)");
+            $db->exec("DELETE FROM cotizaciones WHERE contacto_id IN ($c_list)");
+            $db->exec("DELETE FROM negocios WHERE contacto_id IN ($c_list)");
+            $db->exec("DELETE FROM contactos WHERE id IN ($c_list)");
+        }
+
+        if (!empty($empresas_ids)) {
+            $e_list = implode(',', array_unique($empresas_ids));
+            $db->exec("DELETE FROM empresas WHERE id IN ($e_list) AND id NOT IN (SELECT DISTINCT empresa_id FROM contactos WHERE empresa_id IS NOT NULL)");
+        }
+
+        $db->exec('COMMIT');
+        return count($contactos_ids);
+    } catch (Exception $e) {
+        $db->exec('ROLLBACK');
+        return false;
+    }
+}
+
+// Limpieza mensual o reset controlado de la base de datos
+function limpiar_base_datos_controlada($db, $opciones = []) {
+    $db->exec('BEGIN TRANSACTION');
+    try {
+        if (!empty($opciones['limpiar_contactos'])) {
+            $db->exec("DELETE FROM contactos");
+            $db->exec("DELETE FROM actividades");
+        }
+        if (!empty($opciones['limpiar_negocios'])) {
+            $db->exec("DELETE FROM negocios");
+        }
+        if (!empty($opciones['limpiar_cotizaciones'])) {
+            $db->exec("DELETE FROM cotizaciones_items");
+            $db->exec("DELETE FROM cotizaciones");
+        }
+        if (!empty($opciones['limpiar_empresas'])) {
+            $db->exec("DELETE FROM empresas");
+        }
+        $db->exec('COMMIT');
+        return true;
+    } catch (Exception $e) {
+        $db->exec('ROLLBACK');
+        return false;
+    }
+}
+
+// Generador de CSV completo de respaldo
+function generar_csv_contactos_completo($db, $delimitador = ',') {
+    $out = fopen('php://temp', 'r+');
+    fwrite($out, "\xEF\xBB\xBF");
+
+    $headers = [
+        'ID',
+        'Nombre',
+        'Apellido',
+        'Empresa',
+        'NIT',
+        'Cargo',
+        'Telefono',
+        'Email',
+        'Ciudad',
+        'Direccion',
+        'Sector',
+        'Fuente_Origen',
+        'Etapa_Pipeline',
+        'Nivel_Interes',
+        'Prioridad',
+        'Notas_Requerimiento',
+        'Fecha_Creacion',
+        'Ultima_Actividad'
+    ];
+    fputcsv($out, $headers, $delimitador);
+
+    $sql = "SELECT c.id, c.nombre, c.apellido, c.empresa, e.nit, c.cargo, c.telefono, c.email, c.ciudad, c.direccion, c.sector, c.fuente, c.etapa, c.interes, c.prioridad, c.notas, c.fecha_creacion, c.ultima_actividad 
+            FROM contactos c 
+            LEFT JOIN empresas e ON c.empresa_id = e.id 
+            ORDER BY c.id DESC";
+    $res = $db->query($sql);
+    while ($row = $res->fetchArray(SQLITE3_ASSOC)) {
+        fputcsv($out, [
+            $row['id'],
+            $row['nombre'],
+            $row['apellido'],
+            $row['empresa'],
+            $row['nit'] ?? '',
+            $row['cargo'],
+            $row['telefono'],
+            $row['email'],
+            $row['ciudad'],
+            $row['direccion'],
+            $row['sector'],
+            $row['fuente'],
+            $row['etapa'],
+            $row['interes'],
+            $row['prioridad'] ?: 'media',
+            $row['notas'],
+            $row['fecha_creacion'],
+            $row['ultima_actividad']
+        ], $delimitador);
+    }
+
+    rewind($out);
+    $csv = stream_get_contents($out);
+    fclose($out);
+    return $csv;
+}
+
+// Generador de CSV de la hoja de prueba
+function generar_csv_hoja_prueba($delimitador = ',') {
+    $out = fopen('php://temp', 'r+');
+    fwrite($out, "\xEF\xBB\xBF");
+    $headers = ['Nombre', 'Apellido', 'Empresa', 'NIT', 'Cargo', 'Telefono', 'Email', 'Ciudad', 'Direccion', 'Sector', 'Interes', 'Prioridad', 'Notas_Requerimiento'];
+    fputcsv($out, $headers, $delimitador);
+    $demos = get_demo_contacts_data();
+    foreach ($demos as $d) {
+        fputcsv($out, [
+            $d['nombre'],
+            $d['apellido'],
+            $d['empresa'],
+            $d['nit'],
+            $d['cargo'],
+            $d['telefono'],
+            $d['email'],
+            $d['ciudad'],
+            $d['direccion'],
+            $d['sector'],
+            $d['interes'],
+            $d['prioridad'],
+            $d['notas']
+        ], $delimitador);
+    }
+    rewind($out);
+    $csv = stream_get_contents($out);
+    fclose($out);
+    return $csv;
+}

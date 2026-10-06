@@ -129,34 +129,59 @@ $config = [
 // Contador de tareas pendientes para el sidebar
 $tareas_pendientes_count = (int)$db->querySingle("SELECT COUNT(*) FROM actividades WHERE tipo = 'tarea' AND completada = 0");
 
-// Descargar plantilla CSV de ejemplo para importar contactos de feria
+// Descargar plantilla CSV modelo para importar contactos de feria
 if ($page === 'descargar_plantilla_csv') {
+    $delimitador = ($_GET['delimitador'] ?? '') === 'coma' ? ',' : ';';
     header('Content-Type: text/csv; charset=UTF-8');
-    header('Content-Disposition: attachment; filename="plantilla_contactos_feria_powerpack.csv"');
-    echo "\xEF\xBB\xBF"; // UTF-8 BOM para apertura nativa en Microsoft Excel sin problemas de tildes
+    header('Content-Disposition: attachment; filename="plantilla_contactos_powerpack.csv"');
+    echo "\xEF\xBB\xBF";
     $out = fopen('php://output', 'w');
-    // Usamos delimitador punto y coma (;) estándar en Excel para Latinoamérica y España
-    fputcsv($out, ['Nombre', 'Apellido', 'Empresa', 'NIT', 'Cargo', 'Telefono', 'Email', 'Ciudad', 'Direccion', 'Sector', 'Interes', 'Notas_Feria'], ';');
-    fputcsv($out, ['Carlos', 'Gómez', 'Industrias del Plástico S.A.S.', '900.123.456-7', 'Jefe de Mantenimiento', '+57 310 987 6543', 'cgomez@industriasplastico.com', 'Bogotá', 'Zona Industrial Calle 13 # 68-40', 'Alimentos & Empaques', '3', 'Interesado en empacadora al vacío y dosificadora vistas en el stand'], ';');
-    fputcsv($out, ['María', 'Fernández', 'Lácteos El Manantial', '890.334.221-0', 'Gerente de Operaciones', '+57 320 555 1234', 'mfernandez@lacteosmanantial.co', 'Medellín', 'Carrera 45 # 20-10', 'Lácteos', '2', 'Solicita cotización formal de selladora continua para bolsas de queso'], ';');
-    fputcsv($out, ['Julián', 'Pérez', 'Alimentos NutriValle', '901.888.777-3', 'Director de Compras', '+57 315 444 8899', 'jperez@nutrivalle.com', 'Cali', 'Vía Yumbo Km 4', 'Snacks & Panadería', '3', 'Requiere asesoría técnica para automatización de línea de empaque'], ';');
+    fputcsv($out, ['Nombre', 'Apellido', 'Empresa', 'NIT', 'Cargo', 'Telefono', 'Email', 'Ciudad', 'Direccion', 'Sector', 'Interes', 'Prioridad', 'Notas_Feria'], $delimitador);
+    fputcsv($out, ['Carlos', 'Gómez', 'Industrias del Plástico S.A.S.', '900.123.456-7', 'Jefe de Mantenimiento', '+57 310 987 6543', 'cgomez@industriasplastico.com', 'Bogotá', 'Zona Industrial Calle 13 # 68-40', 'Alimentos & Empaques', '3', 'alta', 'Interesado en empacadora al vacío y dosificadora vistas en el stand'], $delimitador);
+    fputcsv($out, ['María', 'Fernández', 'Lácteos El Manantial', '890.334.221-0', 'Gerente de Operaciones', '+57 320 555 1234', 'mfernandez@lacteosmanantial.co', 'Medellín', 'Carrera 45 # 20-10', 'Lácteos', '2', 'media', 'Solicita cotización formal de selladora continua para bolsas de queso'], $delimitador);
+    fputcsv($out, ['Julián', 'Pérez', 'Alimentos NutriValle', '901.888.777-3', 'Director de Compras', '+57 315 444 8899', 'jperez@nutrivalle.com', 'Cali', 'Vía Yumbo Km 4', 'Snacks & Panadería', '3', 'alta', 'Requiere asesoría técnica para automatización de línea de empaque'], $delimitador);
     fclose($out);
     exit;
 }
 
-// Exportar contactos a CSV compatible con Excel
-if ($page === 'exportar_contactos') {
+// Descargar hoja de prueba con 12 prospectos reales de maquinaria y empaque en Colombia
+if ($page === 'descargar_hoja_prueba') {
+    $delimitador = ($_GET['delimitador'] ?? '') === 'coma' ? ',' : ';';
+    $nombre_archivo = "clientes_prueba_empaque_powerpack_" . ( $delimitador === ',' ? "comas" : "excel" ) . ".csv";
     header('Content-Type: text/csv; charset=UTF-8');
-    header('Content-Disposition: attachment; filename="contactos_powerpack_' . date('Y-m-d') . '.csv"');
-    echo "\xEF\xBB\xBF"; // UTF-8 BOM para Excel
-    $out = fopen('php://output', 'w');
-    fputcsv($out, ['ID', 'Nombre', 'Apellido', 'Email', 'Teléfono', 'Empresa', 'Cargo', 'Ciudad', 'Sector', 'Etapa', 'Interés', 'Última Actividad']);
-    $res = $db->query("SELECT id, nombre, apellido, email, telefono, empresa, cargo, ciudad, sector, etapa, interes, ultima_actividad FROM contactos ORDER BY id DESC");
-    while ($row = $res->fetchArray(SQLITE3_ASSOC)) {
-        fputcsv($out, $row);
-    }
-    fclose($out);
+    header('Content-Disposition: attachment; filename="' . $nombre_archivo . '"');
+    echo generar_csv_hoja_prueba($delimitador);
     exit;
+}
+
+// Exportar respaldo mensual completo de todos los contactos y campos a CSV
+if ($page === 'exportar_contactos' || $page === 'exportar_respaldo_completo') {
+    $delimitador = ($_GET['delimitador'] ?? '') === 'coma' ? ',' : ';';
+    $nombre_archivo = "respaldo_contactos_powerpack_" . date('Y-m-d') . "_" . ($delimitador === ',' ? 'comas' : 'excel') . ".csv";
+    header('Content-Type: text/csv; charset=UTF-8');
+    header('Content-Disposition: attachment; filename="' . $nombre_archivo . '"');
+    echo generar_csv_contactos_completo($db, $delimitador);
+    exit;
+}
+
+// Descargar archivo íntegro de la base de datos SQLite como respaldo maestro
+if ($page === 'descargar_bd_sqlite') {
+    if (($_SESSION['user_rol'] ?? '') !== 'admin') {
+        header('Location: index.php?page=configuracion&err=' . urlencode('Solo el administrador puede descargar el archivo maestro de la base de datos.'));
+        exit;
+    }
+    $db_path = __DIR__ . '/powerpack.db';
+    if (file_exists($db_path)) {
+        header('Content-Description: File Transfer');
+        header('Content-Type: application/x-sqlite3');
+        header('Content-Disposition: attachment; filename="respaldo_powerpack_' . date('Y-m-d_H-i') . '.db"');
+        header('Expires: 0');
+        header('Cache-Control: must-revalidate');
+        header('Pragma: public');
+        header('Content-Length: ' . filesize($db_path));
+        readfile($db_path);
+        exit;
+    }
 }
 
 // Procesar formularios POST
@@ -550,6 +575,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             exit;
         }
+    }
+
+    // 14. Cargar Clientes de Demostración (1 Clic)
+    if (isset($_POST['cargar_datos_demo'])) {
+        $cant = insertar_contactos_demo($db);
+        if ($cant !== false) {
+            header("Location: index.php?page=contactos&fuente=" . urlencode('Datos de Prueba (Demo)') . "&msg=demo_cargada");
+        } else {
+            header("Location: index.php?page=importar&err=" . urlencode("No se pudieron cargar los datos de prueba."));
+        }
+        exit;
+    }
+
+    // 15. Borrar Solo Clientes de Demostración
+    if (isset($_POST['borrar_datos_demo'])) {
+        $eliminados = borrar_contactos_demo($db);
+        if ($eliminados !== false) {
+            header("Location: index.php?page=contactos&msg=demo_borrada");
+        } else {
+            header("Location: index.php?page=importar&err=" . urlencode("Error al eliminar los datos de prueba."));
+        }
+        exit;
+    }
+
+    // 16. Mantenimiento y Limpieza Controlada de la Base de Datos
+    if (isset($_POST['limpiar_base_datos'])) {
+        if (($_SESSION['user_rol'] ?? '') !== 'admin') {
+            header("Location: index.php?page=configuracion&err=" . urlencode("Solo el usuario administrador puede ejecutar la limpieza de la base de datos."));
+            exit;
+        }
+        $palabra = strtoupper(trim($_POST['palabra_seguridad'] ?? ''));
+        if ($palabra !== 'LIMPIAR') {
+            header("Location: index.php?page=configuracion&err=" . urlencode("Debes escribir la palabra exacta 'LIMPIAR' para confirmar el reseteo de la base de datos."));
+            exit;
+        }
+
+        $opciones = [
+            'limpiar_contactos' => !empty($_POST['limpiar_contactos']),
+            'limpiar_negocios' => !empty($_POST['limpiar_negocios']),
+            'limpiar_cotizaciones' => !empty($_POST['limpiar_cotizaciones']),
+            'limpiar_empresas' => !empty($_POST['limpiar_empresas']),
+        ];
+
+        $res = limpiar_base_datos_controlada($db, $opciones);
+        if ($res) {
+            header("Location: index.php?page=configuracion&msg=bd_limpiada");
+        } else {
+            header("Location: index.php?page=configuracion&err=" . urlencode("Ocurrió un error al limpiar la base de datos."));
+        }
+        exit;
     }
 }
 
@@ -1263,6 +1338,9 @@ header('Content-Type: text/html; charset=utf-8');
         <?php if ($msg === 'tarea_creada'): ?><div class="alert alert-success">✅ Tarea programada en el calendario comercial.</div><?php endif; ?>
         <?php if ($msg === 'config_guardada'): ?><div class="alert alert-success">⚙️ Configuración y credenciales SMTP guardadas.</div><?php endif; ?>
         <?php if ($msg === 'smtp_ok'): ?><div class="alert alert-success">🚀 ¡Conexión SMTP exitosa! El correo de prueba fue enviado.</div><?php endif; ?>
+        <?php if ($msg === 'demo_cargada'): ?><div class="alert alert-success">🚀 <strong>¡Clientes de prueba cargados con éxito!</strong> Se crearon 12 prospectos colombianos de maquinaria y empaque con sus fábricas, prioridades y negocios en el Pipeline.</div><?php endif; ?>
+        <?php if ($msg === 'demo_borrada'): ?><div class="alert alert-success">🗑️ <strong>¡Datos de demostración eliminados!</strong> Se limpiaron todos los clientes de prueba y tu plataforma está lista para cargar los contactos reales.</div><?php endif; ?>
+        <?php if ($msg === 'bd_limpiada'): ?><div class="alert alert-success">🧹 <strong>¡Limpieza completada!</strong> La base de datos fue restablecida con éxito. Tus usuarios, configuraciones y documentos de la IA están protegidos.</div><?php endif; ?>
         <?php if ($err): ?><div class="alert alert-error">❌ <?= h($err) ?></div><?php endif; ?>
 
         <?php
