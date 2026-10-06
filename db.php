@@ -173,11 +173,17 @@ function agregar_columna_si_falta($db, $tabla, $columna, $tipo) {
 agregar_columna_si_falta($db, 'contactos', 'empresa_id', 'INTEGER');
 agregar_columna_si_falta($db, 'contactos', 'website', 'TEXT');
 agregar_columna_si_falta($db, 'contactos', 'direccion', 'TEXT');
+agregar_columna_si_falta($db, 'contactos', 'prioridad', "TEXT DEFAULT 'media'");
 agregar_columna_si_falta($db, 'negocios', 'empresa_id', 'INTEGER');
 agregar_columna_si_falta($db, 'negocios', 'ultima_actividad', 'DATETIME');
 agregar_columna_si_falta($db, 'actividades', 'empresa_id', 'INTEGER');
 agregar_columna_si_falta($db, 'actividades', 'fecha_vencimiento', 'DATETIME');
 agregar_columna_si_falta($db, 'actividades', 'completada', 'INTEGER DEFAULT 1');
+
+// Inicializar prioridades para contactos existentes según su interés comercial si no tienen
+@$db->exec("UPDATE contactos SET prioridad = 'alta' WHERE (prioridad IS NULL OR prioridad = '' OR prioridad = 'media') AND interes >= 4");
+@$db->exec("UPDATE contactos SET prioridad = 'baja' WHERE (prioridad IS NULL OR prioridad = '') AND interes <= 1");
+@$db->exec("UPDATE contactos SET prioridad = 'media' WHERE prioridad IS NULL OR prioridad = ''");
 
 // Helpers de Configuración
 function get_config($db, $clave, $default = '') {
@@ -374,6 +380,19 @@ function etapa_badge($etapa) {
     $ico = $iconos[$etapa] ?? '•';
     $nombre = str_replace('_', ' ', $etapa);
     return "<span class='badge $cls'>$ico " . ucwords($nombre) . "</span>";
+}
+
+function prioridad_badge($p) {
+    $p = strtolower(trim($p ?: 'media'));
+    switch ($p) {
+        case 'alta':
+            return '<span class="badge" style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;font-weight:800;font-size:11px" title="Prioridad Alta (VIP / Cierre Inminente)">🔥 Alta</span>';
+        case 'baja':
+            return '<span class="badge" style="background:#f1f5f9;color:#64748b;border:1px solid #cbd5e1;font-weight:700;font-size:11px" title="Prioridad Baja (Frío / En Espera)">⚪ Baja</span>';
+        case 'media':
+        default:
+            return '<span class="badge" style="background:#fef3c7;color:#92400e;border:1px solid #fde68a;font-weight:700;font-size:11px" title="Prioridad Media (Estándar)">🟡 Media</span>';
+    }
 }
 
 function estrellas($n) {

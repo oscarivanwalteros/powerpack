@@ -72,7 +72,15 @@
             </div>
         </div>
 
-        <div class="form-row">
+        <div class="form-row-3">
+            <div class="form-group">
+                <label style="font-weight:700">Prioridad Comercial *</label>
+                <select name="prioridad" style="font-weight:700">
+                    <option value="alta">🔥 Alta (VIP / Cierre Inminente)</option>
+                    <option value="media" selected>🟡 Media (Estándar / Seguimiento)</option>
+                    <option value="baja">⚪ Baja (Frío / En Espera)</option>
+                </select>
+            </div>
             <div class="form-group">
                 <label>Fuente de Captación</label>
                 <select name="fuente">
@@ -84,7 +92,7 @@
                 </select>
             </div>
             <div class="form-group">
-                <label>Nivel de Interés Comercial (1 a 5)</label>
+                <label>Nivel de Interés Comercial</label>
                 <select name="interes">
                     <option value="1">★☆☆☆☆ - Curioso / Bajo</option>
                     <option value="2">★★☆☆☆ - Interés Inicial</option>

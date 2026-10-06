@@ -253,6 +253,37 @@ if ($action === 'guardar_ai_key' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 
+// 6. Cambiar Prioridad de Contacto (1-Clic en tiempo real)
+if ($action === 'cambiar_prioridad' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    $input = json_decode(file_get_contents('php://input'), true);
+    if (!$input) {
+        $input = $_POST;
+    }
+    $id = (int)($input['id'] ?? 0);
+    $prioridad = strtolower(trim($input['prioridad'] ?? 'media'));
+    if (!in_array($prioridad, ['alta', 'media', 'baja'])) {
+        $prioridad = 'media';
+    }
+
+    if ($id > 0) {
+        $stmt = $db->prepare("UPDATE contactos SET prioridad = ?, ultima_actividad = datetime('now') WHERE id = ?");
+        $stmt->bindValue(1, $prioridad, SQLITE3_TEXT);
+        $stmt->bindValue(2, $id, SQLITE3_INTEGER);
+        $stmt->execute();
+
+        echo json_encode([
+            'ok' => true,
+            'id' => $id,
+            'prioridad' => $prioridad,
+            'mensaje' => 'Prioridad actualizada a ' . ucfirst($prioridad)
+        ]);
+        exit;
+    }
+
+    echo json_encode(['ok' => false, 'error' => 'ID de contacto inválido']);
+    exit;
+}
+
 // Default response
 echo json_encode([
     'plataforma' => 'Power Pack API',

@@ -177,12 +177,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $fuente = trim($_POST['fuente'] ?? 'web');
         $etapa = trim($_POST['etapa'] ?? 'lead');
         $interes = (int)($_POST['interes'] ?? 1);
+        $prioridad = strtolower(trim($_POST['prioridad'] ?? 'media'));
+        if (!in_array($prioridad, ['alta', 'media', 'baja'])) {
+            $prioridad = 'media';
+        }
         $notas = trim($_POST['notas'] ?? '');
         $website = trim($_POST['website'] ?? '');
         $direccion = trim($_POST['direccion'] ?? '');
 
         if ($cid > 0) {
-            $stmt = $db->prepare("UPDATE contactos SET empresa_id=?, nombre=?, apellido=?, email=?, telefono=?, empresa=?, cargo=?, ciudad=?, sector=?, fuente=?, etapa=?, interes=?, notas=?, website=?, direccion=?, ultima_actividad=datetime('now') WHERE id=?");
+            $stmt = $db->prepare("UPDATE contactos SET empresa_id=?, nombre=?, apellido=?, email=?, telefono=?, empresa=?, cargo=?, ciudad=?, sector=?, fuente=?, etapa=?, interes=?, prioridad=?, notas=?, website=?, direccion=?, ultima_actividad=datetime('now') WHERE id=?");
             $stmt->bindValue(1, $empresa_id, SQLITE3_INTEGER);
             $stmt->bindValue(2, $nombre, SQLITE3_TEXT);
             $stmt->bindValue(3, $apellido, SQLITE3_TEXT);
@@ -195,15 +199,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->bindValue(10, $fuente, SQLITE3_TEXT);
             $stmt->bindValue(11, $etapa, SQLITE3_TEXT);
             $stmt->bindValue(12, $interes, SQLITE3_INTEGER);
-            $stmt->bindValue(13, $notas, SQLITE3_TEXT);
-            $stmt->bindValue(14, $website, SQLITE3_TEXT);
-            $stmt->bindValue(15, $direccion, SQLITE3_TEXT);
-            $stmt->bindValue(16, $cid, SQLITE3_INTEGER);
+            $stmt->bindValue(13, $prioridad, SQLITE3_TEXT);
+            $stmt->bindValue(14, $notas, SQLITE3_TEXT);
+            $stmt->bindValue(15, $website, SQLITE3_TEXT);
+            $stmt->bindValue(16, $direccion, SQLITE3_TEXT);
+            $stmt->bindValue(17, $cid, SQLITE3_INTEGER);
             $stmt->execute();
             header("Location: index.php?page=detalle&id=$cid&msg=contacto_actualizado");
             exit;
         } else {
-            $stmt = $db->prepare("INSERT INTO contactos (empresa_id, nombre, apellido, email, telefono, empresa, cargo, ciudad, sector, fuente, etapa, interes, notas, website, direccion) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+            $stmt = $db->prepare("INSERT INTO contactos (empresa_id, nombre, apellido, email, telefono, empresa, cargo, ciudad, sector, fuente, etapa, interes, prioridad, notas, website, direccion) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
             $stmt->bindValue(1, $empresa_id, SQLITE3_INTEGER);
             $stmt->bindValue(2, $nombre, SQLITE3_TEXT);
             $stmt->bindValue(3, $apellido, SQLITE3_TEXT);
@@ -216,9 +221,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->bindValue(10, $fuente, SQLITE3_TEXT);
             $stmt->bindValue(11, $etapa, SQLITE3_TEXT);
             $stmt->bindValue(12, $interes, SQLITE3_INTEGER);
-            $stmt->bindValue(13, $notas, SQLITE3_TEXT);
-            $stmt->bindValue(14, $website, SQLITE3_TEXT);
-            $stmt->bindValue(15, $direccion, SQLITE3_TEXT);
+            $stmt->bindValue(13, $prioridad, SQLITE3_TEXT);
+            $stmt->bindValue(14, $notas, SQLITE3_TEXT);
+            $stmt->bindValue(15, $website, SQLITE3_TEXT);
+            $stmt->bindValue(16, $direccion, SQLITE3_TEXT);
             $stmt->execute();
             $new_id = $db->lastInsertRowID();
             $db->exec("INSERT INTO actividades (contacto_id, tipo, asunto, descripcion, resultado) VALUES ($new_id, 'nota', 'Contacto registrado en el sistema', 'Se añadió el contacto desde el formulario.', 'creado')");

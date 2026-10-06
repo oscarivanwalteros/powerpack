@@ -5,7 +5,7 @@ $negocios_estancados_count = 0;
 
 foreach ($pipeline_etapas as $e) {
     $negocios_por_etapa[$e['id']] = [];
-    $res = $db->query("SELECT n.*, c.nombre as c_nombre, c.apellido as c_apellido, c.empresa, c.telefono, c.email,
+    $res = $db->query("SELECT n.*, c.nombre as c_nombre, c.apellido as c_apellido, c.empresa, c.telefono, c.email, c.prioridad,
         COALESCE(n.ultima_actividad, n.fecha_creacion) as fecha_ult
         FROM negocios n 
         LEFT JOIN contactos c ON n.contacto_id = c.id 
@@ -87,14 +87,15 @@ foreach ($pipeline_etapas as $e) {
                     </div>
                     <?php endif; ?>
 
-                    <div style="display:flex;justify-content:space-between;align-items:flex-start">
-                        <h4 style="font-size:13px;font-weight:700">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+                        <h4 style="font-size:13px;font-weight:700;margin:0">
                             <?php if($n['contacto_id']): ?>
                             <a href="?page=detalle&id=<?= $n['contacto_id'] ?>" style="color:var(--fg)"><?= h($n['nombre']) ?></a>
                             <?php else: ?>
                             <?= h($n['nombre']) ?>
                             <?php endif; ?>
                         </h4>
+                        <?= prioridad_badge($n['prioridad'] ?? 'media') ?>
                     </div>
 
                     <div style="font-size:12px;color:var(--fg-secondary);margin-top:2px">

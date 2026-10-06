@@ -243,8 +243,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ejecutar_importacion'
                         $contacto_id = $contacto_existente_id;
                     }
                 } else {
+                    // Determinar prioridad inteligente al importar
+                    $prio_auto = 'media';
+                    if ((int)$datos['interes'] >= 4) $prio_auto = 'alta';
+                    elseif ((int)$datos['interes'] <= 1) $prio_auto = 'baja';
+
                     // Insertar nuevo contacto
-                    $stmt_ins = $db->prepare("INSERT INTO contactos (empresa_id, nombre, apellido, email, telefono, empresa, cargo, ciudad, direccion, sector, fuente, etapa, interes, notas, fecha_creacion, ultima_actividad) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,datetime('now'),datetime('now'))");
+                    $stmt_ins = $db->prepare("INSERT INTO contactos (empresa_id, nombre, apellido, email, telefono, empresa, cargo, ciudad, direccion, sector, fuente, etapa, interes, prioridad, notas, fecha_creacion, ultima_actividad) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,datetime('now'),datetime('now'))");
                     $stmt_ins->bindValue(1, $empresa_id ?: null, SQLITE3_INTEGER);
                     $stmt_ins->bindValue(2, $datos['nombre'], SQLITE3_TEXT);
                     $stmt_ins->bindValue(3, $datos['apellido'] ?: '', SQLITE3_TEXT);
@@ -258,7 +263,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ejecutar_importacion'
                     $stmt_ins->bindValue(11, $fuente_evento, SQLITE3_TEXT);
                     $stmt_ins->bindValue(12, $etapa_inicial, SQLITE3_TEXT);
                     $stmt_ins->bindValue(13, $datos['interes'], SQLITE3_INTEGER);
-                    $stmt_ins->bindValue(14, $datos['notas'] ?: '', SQLITE3_TEXT);
+                    $stmt_ins->bindValue(14, $prio_auto, SQLITE3_TEXT);
+                    $stmt_ins->bindValue(15, $datos['notas'] ?: '', SQLITE3_TEXT);
                     $stmt_ins->execute();
                     $contacto_id = (int)$db->lastInsertRowID();
                     $contactos_creados++;

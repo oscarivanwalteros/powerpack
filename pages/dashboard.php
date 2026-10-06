@@ -28,6 +28,8 @@ $proximos = $db->query("SELECT n.*, c.nombre as c_nombre, c.apellido as c_apelli
     LEFT JOIN contactos c ON n.contacto_id = c.id 
     WHERE n.etapa NOT IN ('ganado', 'perdido') 
     ORDER BY n.fecha_cierre ASC LIMIT 4");
+
+$prioridad_alta_count = (int)$db->querySingle("SELECT COUNT(*) FROM contactos WHERE prioridad = 'alta'");
 ?>
 
 <div class="page-header">
@@ -46,7 +48,9 @@ $proximos = $db->query("SELECT n.*, c.nombre as c_nombre, c.apellido as c_apelli
     <div class="metric-card" style="border-top:4px solid var(--accent)">
         <div class="label">Total Prospectos</div>
         <div class="value"><?= number_format($total_contactos) ?></div>
-        <div class="sub"><?= $leads ?> en etapa lead inicial</div>
+        <div class="sub">
+            <?= $leads ?> leads • <a href="?page=contactos&prioridad=alta" style="color:#dc2626;font-weight:700">🔥 <?= $prioridad_alta_count ?> Alta Prioridad →</a>
+        </div>
     </div>
     <div class="metric-card" style="border-top:4px solid var(--blue)">
         <div class="label">Pipeline Activo</div>

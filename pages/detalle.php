@@ -34,9 +34,10 @@ $clean_tel = limpiar_telefono_whatsapp($c['telefono']);
     <div style="display:flex;align-items:center;gap:18px">
         <?= avatar_iniciales($c['nombre'], $c['apellido']) ?>
         <div>
-            <div style="display:flex;align-items:center;gap:10px">
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
                 <h1 style="font-size:22px;font-weight:800"><?= h($c['nombre'] . ' ' . $c['apellido']) ?></h1>
                 <?= etapa_badge($c['etapa']) ?>
+                <span id="badge-prioridad-header"><?= prioridad_badge($c['prioridad'] ?? 'media') ?></span>
             </div>
             <div style="color:var(--fg-secondary);font-size:13px;margin-top:2px">
                 <strong><?= h($c['cargo'] ?: 'Contacto') ?></strong> <?= $c['empresa'] ? 'en <strong style="color:var(--fg)">' . h($c['empresa']) . '</strong>' : '' ?>
@@ -99,6 +100,20 @@ $clean_tel = limpiar_telefono_whatsapp($c['telefono']);
                 <div>
                     <div style="font-size:11px;color:var(--fg-secondary);font-weight:700;text-transform:uppercase">Sector / Industria</div>
                     <div style="font-weight:600;margin-top:2px"><?= h(ucwords($c['sector'] ?: 'General')) ?></div>
+                </div>
+
+                <div>
+                    <div style="font-size:11px;color:var(--fg-secondary);font-weight:700;text-transform:uppercase">Prioridad Comercial</div>
+                    <div style="margin-top:4px;display:flex;align-items:center;gap:6px">
+                        <select onchange="cambiarPrioridadRapidaDetalle(<?= (int)$c['id'] ?>, this.value)" 
+                                id="select_prioridad_sidebar"
+                                style="padding:4px 8px;font-size:12px;font-weight:700;border-radius:6px;border:1px solid #cbd5e1;background:#fff;cursor:pointer">
+                            <option value="alta" <?= ($c['prioridad'] ?? 'media')==='alta'?'selected':'' ?>>🔥 Alta (VIP / Inminente)</option>
+                            <option value="media" <?= ($c['prioridad'] ?? 'media')==='media'?'selected':'' ?>>🟡 Media (Estándar)</option>
+                            <option value="baja" <?= ($c['prioridad'] ?? 'media')==='baja'?'selected':'' ?>>⚪ Baja (Frío / En Espera)</option>
+                        </select>
+                        <span id="prio_guardado_pill" style="display:none;font-size:10px;font-weight:700;color:#059669;background:#ecfdf5;padding:2px 6px;border-radius:4px;border:1px solid #a7f3d0">✓ Guardado</span>
+                    </div>
                 </div>
 
                 <div>
@@ -556,7 +571,14 @@ Cordialmente,
                     </select>
                 </div>
             </div>
-            <div class="form-row">
+            <div class="form-row-3">
+                <div class="form-group"><label style="font-weight:700">Prioridad Comercial</label>
+                    <select name="prioridad" style="font-weight:700">
+                        <option value="alta" <?= ($c['prioridad'] ?? 'media')==='alta'?'selected':'' ?>>🔥 Alta (VIP / Cierre Inminente)</option>
+                        <option value="media" <?= ($c['prioridad'] ?? 'media')==='media'?'selected':'' ?>>🟡 Media (Estándar)</option>
+                        <option value="baja" <?= ($c['prioridad'] ?? 'media')==='baja'?'selected':'' ?>>⚪ Baja (Frío / En Espera)</option>
+                    </select>
+                </div>
                 <div class="form-group"><label>Nivel de Interés (1 a 5)</label>
                     <select name="interes">
                         <option value="1" <?= $c['interes']==1?'selected':'' ?>>★☆☆☆☆ (Bajo)</option>
@@ -634,6 +656,38 @@ function activarTab(tabId) {
     if (btnMap[tabId]) {
         document.getElementById(btnMap[tabId]).classList.add('active');
     }
+}
+
+function cambiarPrioridadRapidaDetalle(id, prioridad) {
+    var pill = document.getElementById('prio_guardado_pill');
+    var badgeHdr = document.getElementById('badge-prioridad-header');
+    
+    fetch('api.php?action=cambiar_prioridad', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ id: id, prioridad: prioridad })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.ok) {
+            if (pill) {
+                pill.style.display = 'inline-block';
+                setTimeout(() => { pill.style.display = 'none'; }, 2000);
+            }
+            if (badgeHdr) {
+                if (prioridad === 'alta') {
+                    badgeHdr.innerHTML = '<span class="badge" style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;font-weight:800;font-size:11px">🔥 Alta</span>';
+                } else if (prioridad === 'baja') {
+                    badgeHdr.innerHTML = '<span class="badge" style="background:#f1f5f9;color:#64748b;border:1px solid #cbd5e1;font-weight:700;font-size:11px">⚪ Baja</span>';
+                } else {
+                    badgeHdr.innerHTML = '<span class="badge" style="background:#fef3c7;color:#92400e;border:1px solid #fde68a;font-weight:700;font-size:11px">🟡 Media</span>';
+                }
+            }
+        }
+    })
+    .catch(err => {
+        alert('Error al actualizar prioridad: ' + err.message);
+    });
 }
 
 function cargarPlantillaWA(select) {
