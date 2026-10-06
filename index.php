@@ -309,12 +309,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $condiciones = trim($_POST['condiciones'] ?? '');
         $tiempo_entrega = trim($_POST['tiempo_entrega'] ?? '');
         $garantia = trim($_POST['garantia'] ?? '');
+        $asunto = trim($_POST['asunto'] ?? 'Propuesta Técnico-Comercial de Maquinaria y Soluciones de Empaque');
+        $carta_presentacion = trim($_POST['carta_presentacion'] ?? '');
+        $incluye_instalacion = trim($_POST['incluye_instalacion'] ?? 'Incluye servicio de instalación técnica y capacitación operativa en planta');
         $items = $_POST['items'] ?? [];
 
         // Obtener empresa_id del contacto
         $empresa_id = (int)$db->querySingle("SELECT empresa_id FROM contactos WHERE id = $contacto_id");
 
-        $stmt = $db->prepare("INSERT INTO cotizaciones (numero, contacto_id, empresa_id, fecha, validez_dias, subtotal, iva_porcentaje, iva_monto, total, condiciones, tiempo_entrega, garantia, estado) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,'enviada')");
+        $stmt = $db->prepare("INSERT INTO cotizaciones (numero, contacto_id, empresa_id, fecha, validez_dias, subtotal, iva_porcentaje, iva_monto, total, condiciones, tiempo_entrega, garantia, asunto, carta_presentacion, incluye_instalacion, estado) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'enviada')");
         $stmt->bindValue(1, $numero, SQLITE3_TEXT);
         $stmt->bindValue(2, $contacto_id ?: null, SQLITE3_INTEGER);
         $stmt->bindValue(3, $empresa_id ?: null, SQLITE3_INTEGER);
@@ -327,6 +330,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->bindValue(10, $condiciones, SQLITE3_TEXT);
         $stmt->bindValue(11, $tiempo_entrega, SQLITE3_TEXT);
         $stmt->bindValue(12, $garantia, SQLITE3_TEXT);
+        $stmt->bindValue(13, $asunto, SQLITE3_TEXT);
+        $stmt->bindValue(14, $carta_presentacion, SQLITE3_TEXT);
+        $stmt->bindValue(15, $incluye_instalacion, SQLITE3_TEXT);
         $stmt->execute();
         $cot_id = $db->lastInsertRowID();
 

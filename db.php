@@ -230,6 +230,9 @@ agregar_columna_si_falta($db, 'negocios', 'ultima_actividad', 'DATETIME');
 agregar_columna_si_falta($db, 'actividades', 'empresa_id', 'INTEGER');
 agregar_columna_si_falta($db, 'actividades', 'fecha_vencimiento', 'DATETIME');
 agregar_columna_si_falta($db, 'actividades', 'completada', 'INTEGER DEFAULT 1');
+agregar_columna_si_falta($db, 'cotizaciones', 'asunto', 'TEXT');
+agregar_columna_si_falta($db, 'cotizaciones', 'carta_presentacion', 'TEXT');
+agregar_columna_si_falta($db, 'cotizaciones', 'incluye_instalacion', "TEXT DEFAULT 'Incluye servicio de instalación técnica y capacitación operativa en planta'");
 
 // Inicializar prioridades para contactos existentes según su interés comercial si no tienen
 @$db->exec("UPDATE contactos SET prioridad = 'alta' WHERE (prioridad IS NULL OR prioridad = '' OR prioridad = 'media') AND interes >= 4");

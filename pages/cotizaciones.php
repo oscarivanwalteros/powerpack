@@ -70,19 +70,22 @@ $count_aprobadas = $db->querySingle("SELECT COUNT(*) FROM cotizaciones WHERE est
                     <?php if($cot['c_nombre']): ?>
                     <div style="font-size:12px;color:var(--fg-secondary)"><?= h($cot['c_nombre'] . ' ' . $cot['c_apellido']) ?></div>
                     <?php endif; ?>
+                    <?php if(!empty($cot['asunto'])): ?>
+                    <div style="font-size:11px;color:#2c60a4;margin-top:2px;font-weight:600"><?= h($cot['asunto']) ?></div>
+                    <?php endif; ?>
                 </td>
                 <td><?= date('d/m/Y', strtotime($cot['fecha'])) ?></td>
                 <td><?= (int)$cot['validez_dias'] ?> días</td>
-                <td>$<?= number_format($cot['subtotal'], 0) ?></td>
-                <td><strong style="font-size:14px;color:var(--fg)">$<?= number_format($cot['total'], 0) ?></strong></td>
+                <td>$<?= number_format($cot['subtotal'], 0, ',', '.') ?></td>
+                <td><strong style="font-size:14px;color:#0f172a">$<?= number_format($cot['total'], 0, ',', '.') ?></strong></td>
                 <td><span class="badge <?= $badge_class ?>"><?= strtoupper($cot['estado']) ?></span></td>
                 <td>
                     <div style="display:flex;gap:6px">
-                        <a href="?page=ver_cotizacion&id=<?= $cot['id'] ?>" class="btn btn-secondary btn-sm" style="padding:4px 8px;font-size:11px" title="Ver e imprimir PDF">
+                        <a href="?page=ver_cotizacion&id=<?= $cot['id'] ?>" class="btn btn-secondary btn-sm" style="padding:4px 8px;font-size:11px" title="Ver e imprimir PDF en papelería oficial">
                             📄 Ver / PDF
                         </a>
                         <?php if($tel_wa): ?>
-                        <a href="https://wa.me/<?= $tel_wa ?>?text=<?= rawurlencode("Hola {$cot['c_nombre']}, te comparto la cotización formal {$cot['numero']} por un valor total de $" . number_format($cot['total'], 0) . ". ¿Tienes 5 minutos para que la revisemos?") ?>" target="_blank" class="btn btn-whatsapp btn-sm" style="padding:4px 8px;font-size:11px" title="Enviar por WhatsApp">
+                        <a href="https://wa.me/<?= $tel_wa ?>?text=<?= rawurlencode("Estimado(a) {$cot['c_nombre']}, le comparto nuestra propuesta comercial formal {$cot['numero']} de Power Pack por valor de $" . number_format($cot['total'], 0) . " COP. ¿Podemos revisarla juntos?") ?>" target="_blank" class="btn btn-whatsapp btn-sm" style="padding:4px 8px;font-size:11px" title="Enviar por WhatsApp">
                             💬
                         </a>
                         <?php endif; ?>
