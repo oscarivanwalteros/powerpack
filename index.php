@@ -562,7 +562,13 @@ header('Content-Type: text/html; charset=utf-8');
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Power Pack | Suite Comercial</title>
     <meta name="theme-color" content="#2c60a4">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Power Pack">
+    <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" href="assets/logo-power-pack.png">
+    <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -923,19 +929,237 @@ header('Content-Type: text/html; charset=utf-8');
         .board-card h4 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
         .board-card .amount { font-size: 16px; font-weight: 800; color: var(--fg); margin: 6px 0; }
 
+        /* Estilos de Drawer Móvil, Backdrop y Navegación PWA */
+        .sidebar-backdrop {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(15, 23, 42, 0.65);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            z-index: 998;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+        }
+        .sidebar-backdrop.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .mobile-sidebar-close {
+            display: none;
+            background: none;
+            border: none;
+            color: #94a3b8;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+        .mobile-sidebar-close:hover {
+            color: #fff;
+            background: rgba(255,255,255,0.1);
+        }
+
+        .mobile-menu-btn {
+            display: none;
+            background: transparent;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 6px 10px;
+            font-size: 18px;
+            color: var(--fg);
+            cursor: pointer;
+            align-items: center;
+            justify-content: center;
+            margin-right: 8px;
+        }
+        .mobile-menu-btn:hover {
+            background: var(--bg);
+        }
+
+        .pwa-install-btn {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin: 8px 10px 12px 10px;
+            padding: 9px 12px;
+            background: linear-gradient(135deg, #2c60a4 0%, #1e40af 100%);
+            color: #fff;
+            border-radius: var(--radius-sm);
+            font-size: 12px;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(44, 96, 164, 0.3);
+            transition: transform 0.15s ease;
+        }
+        .pwa-install-btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .mobile-bottom-nav {
+            display: none;
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            height: 62px;
+            background: #ffffff;
+            border-top: 1px solid var(--border);
+            z-index: 990;
+            justify-content: space-around;
+            align-items: center;
+            box-shadow: 0 -4px 12px rgba(0,0,0,0.05);
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+        }
+        .mobile-nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            height: 100%;
+            color: var(--fg-secondary);
+            font-size: 11px;
+            font-weight: 600;
+            text-decoration: none;
+            gap: 2px;
+            transition: color 0.15s ease;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+        }
+        .mobile-nav-item .nav-icon {
+            font-size: 18px;
+            line-height: 1;
+        }
+        .mobile-nav-item.active {
+            color: var(--brand-blue);
+            font-weight: 800;
+        }
+
+        .pwa-ios-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(4px);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .pwa-ios-content {
+            background: #ffffff;
+            border-radius: 16px;
+            max-width: 420px;
+            width: 100%;
+            padding: 24px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+
         @media(max-width: 960px) {
-            .sidebar { display: none; }
-            .main-wrap { margin-left: 0; }
+            .sidebar {
+                display: flex;
+                transform: translateX(-100%);
+                transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                position: fixed;
+                top: 0; left: 0; bottom: 0;
+                width: 280px;
+                max-width: 85vw;
+                z-index: 1000;
+                box-shadow: none;
+            }
+            .sidebar.open {
+                transform: translateX(0);
+                box-shadow: 6px 0 24px rgba(0,0,0,0.3);
+            }
+            .sidebar-backdrop {
+                display: block;
+            }
+            .mobile-sidebar-close {
+                display: block;
+            }
+            .mobile-menu-btn {
+                display: inline-flex;
+            }
+            .mobile-bottom-nav {
+                display: flex;
+            }
+            .main-wrap {
+                margin-left: 0;
+                width: 100%;
+            }
+            .content {
+                padding: 16px;
+                padding-bottom: 84px;
+            }
+            .topbar {
+                padding: 0 16px;
+                height: 58px;
+            }
+            .topbar-search {
+                min-width: 160px;
+                max-width: 240px;
+                padding: 5px 10px;
+            }
+            .topbar-search input {
+                font-size: 12px;
+            }
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 12px !important;
+            }
+            .quick-actions-grid {
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 10px !important;
+            }
+            .form-row {
+                grid-template-columns: 1fr !important;
+            }
+        }
+
+        @media(max-width: 560px) {
+            .stats-grid {
+                grid-template-columns: 1fr !important;
+            }
+            .quick-actions-grid {
+                grid-template-columns: 1fr !important;
+            }
+            .topbar-search {
+                display: none;
+            }
+            .topbar-actions {
+                gap: 6px;
+            }
+            .topbar-actions .btn {
+                padding: 5px 8px;
+                font-size: 11px;
+            }
+            .topbar-user-info {
+                display: none;
+            }
+            .content {
+                padding: 12px;
+                padding-bottom: 84px;
+            }
+            .page-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
         }
     </style>
 </head>
 <body>
 
-<aside class="sidebar">
-    <div class="sidebar-logo" style="padding:14px 20px;justify-content:center">
+<aside class="sidebar" id="app-sidebar">
+    <div class="sidebar-logo" style="padding:14px 18px;display:flex;align-items:center;justify-content:space-between">
         <a href="?page=dashboard" style="display:flex;align-items:center;justify-content:center">
-            <img src="assets/logo-blanco.png" alt="Power Pack" style="height:48px;max-width:180px;object-fit:contain">
+            <img src="assets/logo-blanco.png" alt="Power Pack" style="height:44px;max-width:160px;object-fit:contain">
         </a>
+        <button type="button" class="mobile-sidebar-close" onclick="toggleMobileSidebar()" aria-label="Cerrar menú">✕</button>
     </div>
     <nav class="sidebar-nav">
         <div class="sidebar-section">Comercial & Cuentas</div>
@@ -985,21 +1209,35 @@ header('Content-Type: text/html; charset=utf-8');
             <span>⚙️ WhatsApp, SMTP & Webhook</span>
         </a>
     </nav>
+    <div style="padding:10px 12px;border-top:1px solid rgba(255,255,255,0.08)">
+        <button type="button" id="btn-instalar-app" class="pwa-install-btn" onclick="instalarPowerPackApp()" style="width:100%;display:none">
+            <span>📲</span>
+            <span>Instalar como App</span>
+        </button>
+    </div>
 </aside>
 
 <div class="main-wrap">
     <header class="topbar">
-        <form class="topbar-search" action="index.php" method="get">
-            <input type="hidden" name="page" value="contactos">
-            <span>🔍</span>
-            <input type="text" name="q" placeholder="Buscar por contacto, empresa, email..." value="<?= h($_GET['q'] ?? '') ?>">
-        </form>
+        <div style="display:flex;align-items:center;gap:10px">
+            <button type="button" class="mobile-menu-btn" onclick="toggleMobileSidebar()" aria-label="Abrir menú">
+                ☰
+            </button>
+            <form class="topbar-search" action="index.php" method="get">
+                <input type="hidden" name="page" value="contactos">
+                <span>🔍</span>
+                <input type="text" name="q" placeholder="Buscar por contacto, empresa, email..." value="<?= h($_GET['q'] ?? '') ?>">
+            </form>
+        </div>
         <div class="topbar-actions" style="display:flex;align-items:center;gap:10px">
+            <button type="button" id="btn-topbar-install" class="btn btn-sm" onclick="instalarPowerPackApp()" style="display:none;background:#2c60a4;color:#fff;font-weight:700;padding:6px 12px" title="Instalar en este dispositivo">
+                📲 Instalar App
+            </button>
             <a href="?page=nueva_cotizacion" class="btn btn-secondary btn-sm">📄 + Cotización</a>
-            <a href="?page=nuevo" class="btn btn-primary btn-sm">+ Nuevo Contacto</a>
+            <a href="?page=nuevo" class="btn btn-primary btn-sm">+ Contacto</a>
             
-            <div style="border-left:1px solid var(--border);padding-left:12px;margin-left:4px;display:flex;align-items:center;gap:10px">
-                <div style="text-align:right;line-height:1.2">
+            <div style="border-left:1px solid var(--border);padding-left:10px;margin-left:2px;display:flex;align-items:center;gap:8px">
+                <div style="text-align:right;line-height:1.2" class="topbar-user-info">
                     <div style="font-weight:800;font-size:12px;color:var(--fg)"><?= h($_SESSION['user_nombre'] ?? 'Usuario') ?></div>
                     <div style="font-size:10px;font-weight:700;color:<?= ($_SESSION['user_rol']??'')==='admin' ? '#ed1c29' : '#2c60a4' ?>;text-transform:uppercase">
                         <?= ($_SESSION['user_rol']??'')==='admin' ? '👑 Admin' : '💼 Asesor' ?>
@@ -1087,6 +1325,112 @@ header('Content-Type: text/html; charset=utf-8');
         ?>
     </main>
 </div>
+
+<!-- BACKDROP PARA MENÚ MÓVIL DESPLEGABLE -->
+<div id="sidebar-backdrop" class="sidebar-backdrop" onclick="toggleMobileSidebar()"></div>
+
+<!-- BARRA DE NAVEGACIÓN INFERIOR PARA CELULARES -->
+<nav class="mobile-bottom-nav">
+    <a href="?page=dashboard" class="mobile-nav-item <?= $page=='dashboard'?'active':'' ?>">
+        <span class="nav-icon">📊</span>
+        <span>Inicio</span>
+    </a>
+    <a href="?page=contactos" class="mobile-nav-item <?= $page=='contactos'?'active':'' ?>">
+        <span class="nav-icon">👥</span>
+        <span>Contactos</span>
+    </a>
+    <a href="?page=pipeline" class="mobile-nav-item <?= $page=='pipeline'?'active':'' ?>">
+        <span class="nav-icon">📋</span>
+        <span>Pipeline</span>
+    </a>
+    <a href="?page=cotizaciones" class="mobile-nav-item <?= in_array($page, ['cotizaciones', 'nueva_cotizacion'])?'active':'' ?>">
+        <span class="nav-icon">📄</span>
+        <span>Cotizar</span>
+    </a>
+    <button type="button" class="mobile-nav-item" onclick="toggleMobileSidebar()" aria-label="Abrir menú completo">
+        <span class="nav-icon">☰</span>
+        <span>Más</span>
+    </button>
+</nav>
+
+<!-- MODAL DE INSTRUCCIONES PARA INSTALAR EN IPHONE / IPAD -->
+<div id="modalInstalarIOS" class="pwa-ios-modal" onclick="if(event.target===this)this.style.display='none'">
+    <div class="pwa-ios-content">
+        <div style="font-size:38px;margin-bottom:8px">📱</div>
+        <h3 style="font-size:17px;font-weight:800;color:#0f172a;margin-bottom:8px">Instalar Power Pack en tu iPhone / iPad</h3>
+        <p style="font-size:13px;color:var(--fg-secondary);line-height:1.5;margin-bottom:16px">
+            Puedes agregar Power Pack a tu pantalla de inicio para abrirla como una aplicación nativa, a pantalla completa y sin barra de navegación:
+        </p>
+        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px;text-align:left;font-size:13px;line-height:1.6;margin-bottom:18px">
+            <strong>1.</strong> En Safari, toca el botón <strong>Compartir</strong> (icono de cuadrado con flecha hacia arriba <span style="font-size:16px">⎋</span>) en la barra inferior.<br>
+            <strong>2.</strong> Desplázate hacia abajo y selecciona <strong>"Agregar a la pantalla de inicio"</strong> (+).<br>
+            <strong>3.</strong> Toca <strong>"Agregar"</strong> en la esquina superior derecha.
+        </div>
+        <button type="button" onclick="document.getElementById('modalInstalarIOS').style.display='none'" class="btn btn-primary" style="width:100%;padding:10px;font-weight:700;border-radius:8px">
+            Entendido
+        </button>
+    </div>
+</div>
+
+<script>
+// Manejador del menú lateral en móviles
+function toggleMobileSidebar() {
+    var sb = document.getElementById('app-sidebar');
+    var bd = document.getElementById('sidebar-backdrop');
+    if (sb) sb.classList.toggle('open');
+    if (bd) bd.classList.toggle('active');
+}
+
+// PWA: Manejo de instalación en Android / PC / iOS
+var deferredPrompt = null;
+var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+window.addEventListener('beforeinstallprompt', function(e) {
+    e.preventDefault();
+    deferredPrompt = e;
+    var btn1 = document.getElementById('btn-instalar-app');
+    var btn2 = document.getElementById('btn-topbar-install');
+    if (btn1) btn1.style.display = 'flex';
+    if (btn2) btn2.style.display = 'inline-flex';
+});
+
+window.addEventListener('appinstalled', function() {
+    deferredPrompt = null;
+    var btn1 = document.getElementById('btn-instalar-app');
+    var btn2 = document.getElementById('btn-topbar-install');
+    if (btn1) btn1.style.display = 'none';
+    if (btn2) btn2.style.display = 'none';
+});
+
+function instalarPowerPackApp() {
+    if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(function(choiceResult) {
+            if (choiceResult.outcome === 'accepted') {
+                deferredPrompt = null;
+                var btn1 = document.getElementById('btn-instalar-app');
+                var btn2 = document.getElementById('btn-topbar-install');
+                if (btn1) btn1.style.display = 'none';
+                if (btn2) btn2.style.display = 'none';
+            }
+        });
+    } else if (isIOS) {
+        var m = document.getElementById('modalInstalarIOS');
+        if (m) m.style.display = 'flex';
+    } else {
+        alert('Para instalar Power Pack en este dispositivo:\n\n• En Chrome o Edge (PC / Celular): Haz clic en el botón de instalar en la barra de direcciones o en el menú (⋮) > "Instalar Power Pack".\n• En iPhone / iPad: En Safari toca Compartir > "Agregar a la pantalla de inicio".');
+    }
+}
+
+// Registro del Service Worker
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+        navigator.serviceWorker.register('sw.js').catch(function(err) {
+            console.log('SW registration error:', err);
+        });
+    });
+}
+</script>
 
 <?php if (isset($_GET['wa_open'])): ?>
 <script>
