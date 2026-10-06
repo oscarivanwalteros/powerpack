@@ -1331,6 +1331,9 @@ header('Content-Type: text/html; charset=utf-8');
         <a href="?page=configuracion" class="sidebar-item <?= $page=='configuracion'?'active':'' ?>">
             <span>⚙️ WhatsApp, SMTP & Webhook</span>
         </a>
+        <a href="?page=presentacion" class="sidebar-item <?= $page=='presentacion'?'active':'' ?>" style="background:rgba(44,96,164,0.18);border:1px solid rgba(44,96,164,0.35);margin-top:6px">
+            <span>📽️ Manual & Diapositivas</span>
+        </a>
     </nav>
     <div style="padding:10px 12px;border-top:1px solid rgba(255,255,255,0.08)">
         <button type="button" id="btn-instalar-app" class="pwa-install-btn" onclick="instalarPowerPackApp()" style="width:100%;display:none">
@@ -1444,6 +1447,9 @@ header('Content-Type: text/html; charset=utf-8');
                 break;
             case 'configuracion':
                 include 'pages/configuracion.php';
+                break;
+            case 'presentacion':
+                include 'pages/presentacion.php';
                 break;
             default:
                 include 'pages/dashboard.php';
