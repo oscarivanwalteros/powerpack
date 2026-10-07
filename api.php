@@ -370,6 +370,10 @@ if ($action === 'enviar_correo_estudio' && $_SERVER['REQUEST_METHOD'] === 'POST'
         $asunto_final = str_ireplace($buscar, $reemplazo, $asunto_plantilla);
         $cuerpo_final = str_ireplace($buscar, $reemplazo, $cuerpo_plantilla);
 
+        if (strpos($cuerpo_final, '<p>') === false && strpos($cuerpo_final, '<br') === false) {
+            $cuerpo_final = nl2br(htmlspecialchars($cuerpo_final, ENT_NOQUOTES, 'UTF-8'));
+        }
+
         $envio = enviar_correo_smtp($dest_email, $asunto_final, $cuerpo_final, $smtp_config);
 
         $estado = $envio['ok'] ? 'enviado' : 'fallido';
@@ -455,6 +459,10 @@ if ($action === 'enviar_correo_estudio' && $_SERVER['REQUEST_METHOD'] === 'POST'
 
             $asunto_final = str_ireplace($buscar, $reemplazo, $asunto_plantilla);
             $cuerpo_final = str_ireplace($buscar, $reemplazo, $cuerpo_plantilla);
+
+            if (strpos($cuerpo_final, '<p>') === false && strpos($cuerpo_final, '<br') === false) {
+                $cuerpo_final = nl2br(htmlspecialchars($cuerpo_final, ENT_NOQUOTES, 'UTF-8'));
+            }
 
             $envio = enviar_correo_smtp($dest_email, $asunto_final, $cuerpo_final, $smtp_config);
             if ($envio['ok']) {

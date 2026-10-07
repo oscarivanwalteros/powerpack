@@ -851,11 +851,13 @@ Genera la respuesta y el borrador optimizado en el formato JSON requerido.";
 
             $parsed_json = json_decode($text, true);
             if (is_array($parsed_json) && (!empty($parsed_json['cuerpo_html']) || !empty($parsed_json['mensaje']))) {
+                $raw_html = $parsed_json['cuerpo_html'] ?? ($parsed_json['mensaje'] ?? '');
                 return [
                     'ok' => true,
                     'respuesta_chat' => $parsed_json['respuesta_chat'] ?? 'Borrador actualizado con éxito según tus indicaciones.',
                     'asunto' => $parsed_json['asunto'] ?? ($borrador_actual['asunto'] ?? 'Propuesta de Soluciones Industriales | Power Pack'),
-                    'cuerpo_html' => $parsed_json['cuerpo_html'] ?? ($parsed_json['mensaje'] ?? ''),
+                    'cuerpo_html' => $raw_html,
+                    'cuerpo_texto' => html_a_texto_limpio($raw_html),
                     'mensaje' => $parsed_json['mensaje'] ?? ($parsed_json['cuerpo_html'] ?? ''),
                     'origen' => "Subagente {$subagent['nombre']} ($provider: " . ($resp['model'] ?? $model) . ")"
                 ];
@@ -865,6 +867,19 @@ Genera la respuesta y el borrador optimizado en el formato JSON requerido.";
 
     // Motor Heurístico / Offline de alta calidad para el Subagente
     return copilot_subagente_offline($subagent, $skill, $contacto, $instrucciones_usuario, $borrador_actual);
+}
+
+// Limpia etiquetas HTML y formatea a texto plano legible para el redactor visual
+function html_a_texto_limpio($html) {
+    if (empty($html)) return '';
+    $txt = preg_replace('/<\/p>/i', "\n\n", $html);
+    $txt = preg_replace('/<br\s*\/?>/i', "\n", $txt);
+    $txt = preg_replace('/<\/li>/i', "\n", $txt);
+    $txt = preg_replace('/<li>/i', "• ", $txt);
+    $txt = strip_tags($txt);
+    $txt = html_entity_decode($txt, ENT_QUOTES, 'UTF-8');
+    $txt = preg_replace('/(\r?\n){3,}/', "\n\n", $txt);
+    return trim($txt);
 }
 
 // Respaldo heurístico e interactivo offline para subagentes
@@ -903,6 +918,7 @@ function copilot_subagente_offline($subagent, $skill, $contacto, $instrucciones_
             'respuesta_chat' => "He estructurado el correo aplicando la habilidad de '{$skill_nombre}'. El mensaje incluye la propuesta de valor de Power Pack (garantía de 1 año, stock en Bogotá y respaldo técnico) con llamado a la acción claro.",
             'asunto' => $asunto,
             'cuerpo_html' => $cuerpo,
+            'cuerpo_texto' => html_a_texto_limpio($cuerpo),
             'mensaje' => strip_tags($cuerpo),
             'origen' => "Subagente {$subagent['nombre']} (Motor Heurístico Power Pack)"
         ];

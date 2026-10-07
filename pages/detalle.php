@@ -59,7 +59,9 @@ $clean_tel = limpiar_telefono_whatsapp($c['telefono']);
         <a href="?page=whatsapp&contacto_id=<?= $c['id'] ?>" class="btn btn-whatsapp btn-sm" title="Redactar y despachar en Estudio de WhatsApp IA">💬 WhatsApp IA</a>
         <?php endif; ?>
         <?php if($c['email']): ?>
-        <a href="?page=correos&contacto_id=<?= $c['id'] ?>" class="btn btn-email btn-sm" title="Redactar y enviar en Estudio de Correos IA">✉️ Correo IA</a>
+        <a href="?page=correos&contacto_id=<?= $c['id'] ?>" class="btn btn-sm" style="background:#2c60a4;color:#fff;font-weight:800;box-shadow:0 2px 6px rgba(44,96,164,0.25)" title="Redactar con IA y despachar por Hostinger SMTP">
+            ✉️ Enviar Correo con IA
+        </a>
         <?php endif; ?>
         <button onclick="activarTab('tab-tarea')" class="btn btn-secondary btn-sm">✅ + Tarea</button>
         <button onclick="document.getElementById('modalEditar').style.display='flex'" class="btn btn-secondary btn-sm">✏️ Editar</button>
@@ -330,20 +332,34 @@ $clean_tel = limpiar_telefono_whatsapp($c['telefono']);
                 <div id="tab-email" class="composer-pane" style="display:none">
                     <form method="POST">
                         <input type="hidden" name="enviar_email" value="1">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label>Para (Email Destinatario)</label>
-                                <input type="email" name="destinatario" value="<?= h($c['email']) ?>" required>
+                        
+                        <!-- BANNER DESTINATARIO & LINK AL ESTUDIO COMPLETO -->
+                        <div style="background:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:12px 16px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+                            <div>
+                                <span style="font-size:11px;font-weight:800;color:var(--fg-secondary);text-transform:uppercase">Destinatario Cargado:</span>
+                                <div style="font-size:14px;font-weight:800;color:var(--fg)">
+                                    <?= h($c['nombre'] . ' ' . $c['apellido']) ?> <?= $c['empresa'] ? '(' . h($c['empresa']) . ')' : '' ?> &lt;<span style="color:var(--brand-blue)"><?= h($c['email']) ?></span>&gt;
+                                </div>
                             </div>
-                            <div class="form-group">
+                            <a href="?page=correos&contacto_id=<?= $c['id'] ?>" class="btn btn-sm" style="background:linear-gradient(135deg, #2c60a4 0%, #1e40af 100%);color:#fff;font-weight:800;box-shadow:0 2px 6px rgba(44,96,164,0.3)">
+                                🖥️ Abrir en Estudio de Correos IA (Pantalla Completa)
+                            </a>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group" style="flex:1">
+                                <label>Para (Email Confirmado)</label>
+                                <input type="email" name="destinatario" value="<?= h($c['email']) ?>" required style="background:#f8fafc;font-weight:600">
+                            </div>
+                            <div class="form-group" style="flex:1">
                                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-                                    <label style="margin:0">Plantilla Rápida de Email</label>
+                                    <label style="margin:0">Plantilla Rápida</label>
                                     <button type="button" onclick="abrirModalIA('email')" class="btn btn-secondary btn-sm" style="padding:2px 8px;font-size:11px;color:#2c60a4;font-weight:700">
-                                        ✨ Redactar con IA
+                                        ✨ Asistente IA
                                     </button>
                                 </div>
                                 <select id="select_plantilla_email" onchange="cargarPlantillaEmail(this)">
-                                    <option value="">— Seleccionar plantilla —</option>
+                                    <option value="">— Seleccionar plantilla predefinida —</option>
                                     <?php while($pe = $plantillas_email->fetchArray(SQLITE3_ASSOC)): ?>
                                     <option data-asunto="<?= h(reemplazar_variables($pe['asunto'], $c, $config)) ?>" value="<?= h(reemplazar_variables($pe['cuerpo'], $c, $config)) ?>">
                                         <?= h($pe['titulo']) ?>
@@ -354,48 +370,52 @@ $clean_tel = limpiar_telefono_whatsapp($c['telefono']);
                         </div>
 
                         <!-- BARRA GENERADOR RÁPIDO CON SKILL B2B (AUTO-PEGADO EN CORREO) -->
-                        <div style="background:linear-gradient(135deg, #f0fdf4 0%, #eff6ff 100%);border:1px solid #bfdbfe;border-radius:8px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+                        <div style="background:linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%);border:1px solid #bfdbfe;border-radius:8px;padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
                             <div style="display:flex;align-items:center;gap:8px">
-                                <span style="font-size:18px">⚡</span>
+                                <span style="font-size:20px">✨</span>
                                 <div>
-                                    <strong style="font-size:12px;color:#1e3a8a">Generar Correo con Skill B2B:</strong>
-                                    <span style="font-size:11px;color:#64748b;display:block">Redacta asunto y propuesta persuasiva y los pega automáticamente</span>
+                                    <strong style="font-size:13px;color:#1e3a8a">Redactar para <?= h($c['nombre']) ?> con Skill B2B:</strong>
+                                    <span style="font-size:11px;color:#64748b;display:block">Genera el asunto y el mensaje adaptado a <?= h($c['empresa'] ?: 'su planta') ?></span>
                                 </div>
                             </div>
-                            <div style="display:flex;align-items:center;gap:8px;flex:1;justify-content:flex-end;min-width:260px">
+                            <div style="display:flex;align-items:center;gap:8px;flex:1;justify-content:flex-end;min-width:280px">
                                 <select id="quick_skill_email" style="font-size:12px;padding:6px 10px;border-radius:6px;border:1px solid #93c5fd;background:#fff;font-weight:600;max-width:320px">
                                     <?php foreach($skills_email as $sk): ?>
                                     <option value="<?= h($sk['codigo']) ?>"><?= h($sk['nombre']) ?></option>
                                     <?php endforeach; ?>
                                 </select>
-                                <button type="button" onclick="generarYPegar('email')" id="btn-quick-email" class="btn btn-sm" style="background:#2c60a4;color:#fff;font-weight:800;padding:7px 14px;white-space:nowrap;box-shadow:0 2px 4px rgba(44,96,164,0.25)">
-                                    ⚡ Generar y Pegar en Correo
+                                <button type="button" onclick="generarYPegar('email')" id="btn-quick-email" class="btn btn-sm" style="background:#2c60a4;color:#fff;font-weight:800;padding:8px 16px;white-space:nowrap;box-shadow:0 2px 6px rgba(44,96,164,0.25)">
+                                    ⚡ Generar y Pegar
                                 </button>
                             </div>
                             <div id="quick_status_email" style="width:100%;display:none;font-size:11px;padding:5px 8px;border-radius:4px;font-weight:700"></div>
                         </div>
 
                         <div class="form-group">
-                            <label>Asunto del Correo</label>
-                            <input type="text" name="asunto" id="email_asunto" value="<?= h(reemplazar_variables("Propuesta y Soluciones de Automatización para {empresa}", $c, $config)) ?>" required>
+                            <label style="font-weight:800">Asunto del Correo</label>
+                            <input type="text" name="asunto" id="email_asunto" style="font-size:14px;font-weight:700" value="<?= h(reemplazar_variables("Propuesta y Soluciones de Automatización para {empresa} | Power Pack", $c, $config)) ?>" required>
                         </div>
                         <div class="form-group">
-                            <label>Cuerpo del Correo</label>
-                            <textarea name="cuerpo" id="email_cuerpo" rows="7" required>Estimado/a <?= h($c['nombre']) ?>,
+                            <label style="font-weight:800">Cuerpo del Correo (Espacioso y Editable)</label>
+                            <textarea name="cuerpo" id="email_cuerpo" rows="10" style="font-size:14px;line-height:1.7;padding:12px;font-family:'Plus Jakarta Sans',sans-serif" required>Estimado(a) <?= h($c['nombre']) ?>,
 
-Es un gusto saludarte. Te comparto la información solicitada sobre nuestras soluciones de maquinaria y paletización para <?= h($c['empresa'] ?: 'su empresa') ?>.
+Es un gusto saludarte. Te comparto la propuesta sobre nuestras soluciones en maquinaria industrial de empaque, sellado y dosificado para <?= h($c['empresa'] ?: 'su empresa') ?>.
 
-¿Podríamos coordinar una breve reunión o llamada de 10 minutos para revisar los detalles técnicos?
+Contamos con stock disponible para entrega inmediata en Bogotá, repuestos originales y 12 meses de garantía directa.
+
+¿Podríamos coordinar una breve llamada de 10 minutos esta semana o agendar una visita técnica a nuestro Showroom en Bogotá para realizar pruebas con tu producto real?
 
 Quedo atento a tus comentarios.
 
 Cordialmente,
 <?= h($config['empresa_nombre']) ?>
-<?= h($config['empresa_telefono']) ?></textarea>
+<?= h($config['empresa_telefono']) ?> • <?= h($config['empresa_direccion']) ?></textarea>
                         </div>
-                        <div style="display:flex;justify-content:space-between;align-items:center">
-                            <button type="submit" class="btn btn-email">✉️ Enviar Correo vía Hostinger SMTP</button>
-                            <span style="font-size:11px;color:var(--fg-secondary)">Servidor: <?= h($config['smtp_host']) ?></span>
+                        <div style="display:flex;justify-content:space-between;align-items:center;padding-top:8px">
+                            <button type="submit" class="btn btn-email" style="padding:10px 22px;font-size:14px;font-weight:800">
+                                🚀 Enviar Correo vía Hostinger SMTP
+                            </button>
+                            <span style="font-size:11px;color:var(--fg-secondary)">Servidor: <?= h($config['smtp_host']) ?>:<?= h($config['smtp_port']) ?> (SSL)</span>
                         </div>
                     </form>
                 </div>
