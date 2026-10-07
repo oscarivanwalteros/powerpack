@@ -602,6 +602,64 @@ if ($action === 'obtener_historial_subagente') {
     exit;
 }
 
+// 11. Toggle Tarea / Compromiso AJAX (Checklist Inmediato)
+if ($action === 'toggle_tarea_ajax' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    $input = json_decode(file_get_contents('php://input'), true);
+    if (!$input) $input = $_POST;
+    $tid = (int)($input['tarea_id'] ?? 0);
+    $estado = (int)($input['nuevo_estado'] ?? 0);
+
+    if ($tid > 0) {
+        $stmt = $db->prepare("UPDATE actividades SET completada = ?, resultado = ? WHERE id = ?");
+        $stmt->bindValue(1, $estado, SQLITE3_INTEGER);
+        $stmt->bindValue(2, $estado ? 'completada' : 'pendiente', SQLITE3_TEXT);
+        $stmt->bindValue(3, $tid, SQLITE3_INTEGER);
+        $stmt->execute();
+
+        // Obtener contadores actualizados de hoy
+        $pend_hoy = (int)$db->querySingle("SELECT COUNT(*) FROM actividades WHERE tipo = 'tarea' AND completada = 0 AND date(fecha_vencimiento) <= date('now')");
+        $comp_hoy = (int)$db->querySingle("SELECT COUNT(*) FROM actividades WHERE tipo = 'tarea' AND completada = 1 AND date(fecha_vencimiento) = date('now')");
+
+        echo json_encode([
+            'ok' => true,
+            'tarea_id' => $tid,
+            'completada' => $estado,
+            'pendientes_hoy' => $pend_hoy,
+            'completadas_hoy' => $comp_hoy
+        ]);
+        exit;
+    }
+    echo json_encode(['ok' => false, 'error' => 'ID de tarea inválido']);
+    exit;
+}
+
+// 12. Crear Tarea Rápida en Calendario AJAX
+if ($action === 'crear_tarea_rapida_ajax' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    $input = json_decode(file_get_contents('php://input'), true);
+    if (!$input) $input = $_POST;
+
+    $asunto = trim($input['asunto'] ?? '');
+    $contacto_id = (int)($input['contacto_id'] ?? 0);
+    $categoria = trim($input['categoria_compromiso'] ?? 'tarea');
+    $prioridad = trim($input['prioridad'] ?? 'alta');
+    $fecha_venc = trim($input['fecha_vencimiento'] ?? (date('Y-m-d') . ' 17:00:00'));
+
+    if (!empty($asunto)) {
+        $stmt = $db->prepare("INSERT INTO actividades (contacto_id, tipo, asunto, fecha_vencimiento, completada, resultado, prioridad, categoria_compromiso) VALUES (?, 'tarea', ?, ?, 0, 'pendiente', ?, ?)");
+        $stmt->bindValue(1, $contacto_id > 0 ? $contacto_id : null, SQLITE3_INTEGER);
+        $stmt->bindValue(2, $asunto, SQLITE3_TEXT);
+        $stmt->bindValue(3, $fecha_venc, SQLITE3_TEXT);
+        $stmt->bindValue(4, $prioridad, SQLITE3_TEXT);
+        $stmt->bindValue(5, $categoria, SQLITE3_TEXT);
+        $stmt->execute();
+        $new_id = $db->lastInsertRowID();
+
+        echo json_encode(['ok' => true, 'tarea_id' => $new_id, 'mensaje' => 'Compromiso agendado']);
+        exit;
+    }
+    echo json_encode(['ok' => false, 'error' => 'El título del compromiso es requerido']);
+    exit;
+}
 
 // Default response
 echo json_encode([

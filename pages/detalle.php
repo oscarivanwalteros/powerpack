@@ -471,15 +471,35 @@ Cordialmente,
                     <form method="POST">
                         <input type="hidden" name="nueva_tarea" value="1">
                         <input type="hidden" name="contacto_id" value="<?= $c['id'] ?>">
-                        <div class="form-row">
+                        <div class="form-row-3">
                             <div class="form-group">
-                                <label>Título de la Tarea / Recordatorio</label>
-                                <input type="text" name="asunto" placeholder="Ej: Llamar para confirmar recepción de cotización" required>
+                                <label>Tipo de Acción</label>
+                                <select name="categoria_compromiso" style="font-weight:700">
+                                    <option value="llamada">📞 Llamar a Cliente</option>
+                                    <option value="cotizacion">📄 Pasar Cotización Formal</option>
+                                    <option value="investigacion">🔍 Investigación Técnica</option>
+                                    <option value="visita">🎪 Visita / Showroom</option>
+                                    <option value="correo">✉️ Enviar Correo IA</option>
+                                    <option value="tarea">⚡ Tarea General</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Prioridad</label>
+                                <select name="prioridad" style="font-weight:700">
+                                    <option value="urgente" style="color:#dc2626">🔴 Urgente (Hacer Primero)</option>
+                                    <option value="alta" style="color:#ea580c">🟠 Alta Prioridad</option>
+                                    <option value="normal" selected>🟡 Normal / Programada</option>
+                                    <option value="baja">⚪ Baja</option>
+                                </select>
                             </div>
                             <div class="form-group">
                                 <label>Fecha y Hora Límite</label>
-                                <input type="datetime-local" name="fecha_vencimiento" value="<?= date('Y-m-d\TH:i', strtotime('+1 day 09:00')) ?>" required>
+                                <input type="datetime-local" name="fecha_vencimiento" value="<?= date('Y-m-d\TH:i', strtotime('+1 day 10:00')) ?>" required>
                             </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Título del Compromiso</label>
+                            <input type="text" name="asunto" placeholder="Ej: Llamar para validar espacio en planta y presupuesto..." required>
                         </div>
                         <div class="form-group">
                             <label>Detalles adicionales</label>

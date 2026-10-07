@@ -132,8 +132,9 @@ $config = [
     'banco_info'       => get_config($db, 'banco_info', 'Bancolombia Cta Corriente # 104-582910-44'),
 ];
 
-// Contador de tareas pendientes para el sidebar
+// Contadores de tareas y compromisos para el sidebar
 $tareas_pendientes_count = (int)$db->querySingle("SELECT COUNT(*) FROM actividades WHERE tipo = 'tarea' AND completada = 0");
+$agenda_hoy_count = (int)$db->querySingle("SELECT COUNT(*) FROM actividades WHERE tipo = 'tarea' AND completada = 0 AND (date(fecha_vencimiento) <= date('now') OR fecha_vencimiento IS NULL OR prioridad = 'urgente')");
 
 // Descargar plantilla CSV modelo para importar contactos de feria
 if ($page === 'descargar_plantilla_csv') {
@@ -486,18 +487,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    // 9. Crear Tarea / Recordatorio Comercial
+    // 9. Crear Tarea / Compromiso Comercial en Calendario
     if (isset($_POST['nueva_tarea'])) {
         $cid = (int)($_POST['contacto_id'] ?? 0);
-        $asunto = trim($_POST['asunto'] ?? 'Tarea comercial');
+        $asunto = trim($_POST['asunto'] ?? 'Compromiso comercial');
         $desc = trim($_POST['descripcion'] ?? '');
         $fecha_venc = trim($_POST['fecha_vencimiento'] ?? date('Y-m-d H:i:s'));
+        $prioridad = trim($_POST['prioridad'] ?? 'normal');
+        $categoria = trim($_POST['categoria_compromiso'] ?? 'tarea');
 
-        $stmt = $db->prepare("INSERT INTO actividades (contacto_id, tipo, asunto, descripcion, fecha_vencimiento, completada, resultado) VALUES (?, 'tarea', ?, ?, ?, 0, 'pendiente')");
+        $stmt = $db->prepare("INSERT INTO actividades (contacto_id, tipo, asunto, descripcion, fecha_vencimiento, completada, resultado, prioridad, categoria_compromiso) VALUES (?, 'tarea', ?, ?, ?, 0, 'pendiente', ?, ?)");
         $stmt->bindValue(1, $cid ?: null, SQLITE3_INTEGER);
         $stmt->bindValue(2, $asunto, SQLITE3_TEXT);
         $stmt->bindValue(3, $desc, SQLITE3_TEXT);
         $stmt->bindValue(4, $fecha_venc, SQLITE3_TEXT);
+        $stmt->bindValue(5, $prioridad, SQLITE3_TEXT);
+        $stmt->bindValue(6, $categoria, SQLITE3_TEXT);
         $stmt->execute();
 
         if ($cid > 0) {
@@ -511,8 +516,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif ($cid > 0) {
             header("Location: index.php?page=detalle&id=$cid&msg=tarea_creada");
         } else {
-            header("Location: index.php?page=tareas&msg=tarea_creada");
+            header("Location: index.php?page=calendario&msg=tarea_creada");
         }
+        exit;
+    }
+
+    // 9b. Sembrar Compromisos de Demostración para Calendario
+    if (isset($_POST['sembrar_compromisos_demo'])) {
+        inicializar_compromisos_agenda_demo($db, true);
+        header("Location: index.php?page=calendario&msg=compromisos_cargados");
         exit;
     }
 
@@ -526,7 +538,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->bindValue(3, $tid, SQLITE3_INTEGER);
         $stmt->execute();
 
-        $return_url = $_POST['return_url'] ?? 'index.php?page=tareas';
+        $return_url = $_POST['return_url'] ?? 'index.php?page=calendario';
         header("Location: " . $return_url);
         exit;
     }
@@ -1289,6 +1301,12 @@ header('Content-Type: text/html; charset=utf-8');
         <a href="?page=dashboard" class="sidebar-item <?= $page=='dashboard'?'active':'' ?>">
             <span>📊 Dashboard</span>
         </a>
+        <a href="?page=calendario" class="sidebar-item <?= $page=='calendario'?'active':'' ?>">
+            <span>📅 Calendario & Agenda Hoy</span>
+            <?php if($agenda_hoy_count > 0): ?>
+            <span class="sidebar-badge" style="background:#ef4444;color:#fff;font-weight:800"><?= $agenda_hoy_count ?></span>
+            <?php endif; ?>
+        </a>
         <a href="?page=contactos" class="sidebar-item <?= $page=='contactos'?'active':'' ?>">
             <span>👥 Contactos</span>
         </a>
@@ -1394,7 +1412,8 @@ header('Content-Type: text/html; charset=utf-8');
         <?php if ($msg === 'archivo_subido'): ?><div class="alert alert-success">📎 Documento adjuntado de forma segura en Hostinger.</div><?php endif; ?>
         <?php if ($msg === 'whatsapp_registrado'): ?><div class="alert alert-success">💬 WhatsApp registrado con éxito en el historial comercial.</div><?php endif; ?>
         <?php if ($msg === 'email_enviado'): ?><div class="alert alert-success">✉️ Correo electrónico enviado vía SMTP y registrado en el historial.</div><?php endif; ?>
-        <?php if ($msg === 'tarea_creada'): ?><div class="alert alert-success">✅ Tarea programada en el calendario comercial.</div><?php endif; ?>
+        <?php if ($msg === 'tarea_creada'): ?><div class="alert alert-success">✅ Compromiso comercial agendado exitosamente. Ya aparece en tu lista de hoy y en el calendario.</div><?php endif; ?>
+        <?php if ($msg === 'compromisos_cargados'): ?><div class="alert alert-success">📅 <strong>¡Compromisos del día cargados!</strong> Tu agenda de hoy ya cuenta con llamadas, cotizaciones e investigaciones prioritarias.</div><?php endif; ?>
         <?php if ($msg === 'config_guardada'): ?><div class="alert alert-success">⚙️ Configuración y credenciales SMTP guardadas.</div><?php endif; ?>
         <?php if ($msg === 'smtp_ok'): ?><div class="alert alert-success">🚀 ¡Conexión SMTP exitosa! El correo de prueba fue enviado.</div><?php endif; ?>
         <?php if ($msg === 'demo_cargada'): ?><div class="alert alert-success">🚀 <strong>¡Clientes de prueba cargados con éxito!</strong> Se crearon 12 prospectos colombianos de maquinaria y empaque con sus fábricas, prioridades y negocios en el Pipeline.</div><?php endif; ?>
@@ -1407,6 +1426,9 @@ header('Content-Type: text/html; charset=utf-8');
         switch ($page) {
             case 'dashboard':
                 include 'pages/dashboard.php';
+                break;
+            case 'calendario':
+                include 'pages/calendario.php';
                 break;
             case 'contactos':
                 include 'pages/contactos.php';
@@ -1480,6 +1502,10 @@ header('Content-Type: text/html; charset=utf-8');
     <a href="?page=dashboard" class="mobile-nav-item <?= $page=='dashboard'?'active':'' ?>">
         <span class="nav-icon">📊</span>
         <span>Inicio</span>
+    </a>
+    <a href="?page=calendario" class="mobile-nav-item <?= $page=='calendario'?'active':'' ?>">
+        <span class="nav-icon">📅</span>
+        <span>Agenda Hoy</span>
     </a>
     <a href="?page=contactos" class="mobile-nav-item <?= $page=='contactos'?'active':'' ?>">
         <span class="nav-icon">👥</span>

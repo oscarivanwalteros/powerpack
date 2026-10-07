@@ -261,6 +261,8 @@ agregar_columna_si_falta($db, 'negocios', 'ultima_actividad', 'DATETIME');
 agregar_columna_si_falta($db, 'actividades', 'empresa_id', 'INTEGER');
 agregar_columna_si_falta($db, 'actividades', 'fecha_vencimiento', 'DATETIME');
 agregar_columna_si_falta($db, 'actividades', 'completada', 'INTEGER DEFAULT 1');
+agregar_columna_si_falta($db, 'actividades', 'prioridad', "TEXT DEFAULT 'normal'");
+agregar_columna_si_falta($db, 'actividades', 'categoria_compromiso', "TEXT DEFAULT 'tarea'");
 agregar_columna_si_falta($db, 'cotizaciones', 'asunto', 'TEXT');
 agregar_columna_si_falta($db, 'cotizaciones', 'carta_presentacion', 'TEXT');
 agregar_columna_si_falta($db, 'cotizaciones', 'incluye_instalacion', "TEXT DEFAULT 'Incluye servicio de instalación técnica y capacitación operativa en planta'");
@@ -882,6 +884,102 @@ function borrar_contactos_demo($db) {
     }
 }
 
+// Inicializar compromisos y tareas modelo para la agenda y el calendario (llamadas, cotizaciones, investigación)
+function inicializar_compromisos_agenda_demo($db, $forzar = false) {
+    if (!$forzar) {
+        $pendientes = (int)$db->querySingle("SELECT COUNT(*) FROM actividades WHERE tipo = 'tarea' AND completada = 0");
+        if ($pendientes > 0) return 0;
+    }
+
+    $contactos = [];
+    $res_c = $db->query("SELECT id, nombre, apellido, empresa FROM contactos ORDER BY (CASE prioridad WHEN 'alta' THEN 1 WHEN 'media' THEN 2 ELSE 3 END) ASC LIMIT 6");
+    if ($res_c) {
+        while ($r = $res_c->fetchArray(SQLITE3_ASSOC)) {
+            $contactos[] = $r;
+        }
+    }
+
+    if (empty($contactos)) return 0;
+
+    $hoy = date('Y-m-d');
+    $manana = date('Y-m-d', strtotime('+1 day'));
+    $en_dos_dias = date('Y-m-d', strtotime('+2 days'));
+
+    $compromisos = [
+        [
+            'c_idx' => 0,
+            'tipo' => 'tarea',
+            'categoria' => 'llamada',
+            'prioridad' => 'urgente',
+            'asunto' => 'Llamar para validar espacio en planta y acometida eléctrica para selladora continua',
+            'desc' => 'Confirmar si disponen de conexión 220V trifásica o bifásica para la selladora continua con fechador de lote.',
+            'fecha_venc' => $hoy . ' 10:30:00'
+        ],
+        [
+            'c_idx' => 1,
+            'tipo' => 'tarea',
+            'categoria' => 'cotizacion',
+            'prioridad' => 'urgente',
+            'asunto' => 'Pasar cotización formal con 12 meses de garantía y stock en Bogotá',
+            'desc' => 'Generar propuesta técnico-comercial formal en papel membrete incluyendo tiempo de entrega inmediata y capacitación.',
+            'fecha_venc' => $hoy . ' 14:00:00'
+        ],
+        [
+            'c_idx' => 2,
+            'tipo' => 'tarea',
+            'categoria' => 'investigacion',
+            'prioridad' => 'alta',
+            'asunto' => 'Investigación técnica: verificar compatibilidad de bobina y sellado hermético',
+            'desc' => 'Analizar muestra de empaque plástico, calibre y tipo de polietileno para dosificadora y sellado continuo.',
+            'fecha_venc' => $hoy . ' 16:30:00'
+        ],
+        [
+            'c_idx' => 3,
+            'tipo' => 'tarea',
+            'categoria' => 'visita',
+            'prioridad' => 'alta',
+            'asunto' => 'Coordinar visita técnica y pruebas en Showroom Bogotá (Calle 161 # 54 - 25)',
+            'desc' => 'Agendar sesión de pruebas reales con producto del cliente para validar velocidad por minuto y hermeticidad.',
+            'fecha_venc' => $manana . ' 11:00:00'
+        ],
+        [
+            'c_idx' => 4,
+            'tipo' => 'tarea',
+            'categoria' => 'correo',
+            'prioridad' => 'normal',
+            'asunto' => 'Enviar ficha técnica y video de paletizadora robot 3 en operación continua',
+            'desc' => 'Compartir video demostrativo y condiciones de garantía de 1 año al departamento de compras y mantenimiento.',
+            'fecha_venc' => $manana . ' 15:30:00'
+        ],
+        [
+            'c_idx' => 5,
+            'tipo' => 'tarea',
+            'categoria' => 'investigacion',
+            'prioridad' => 'normal',
+            'asunto' => 'Estudiar volumen de producción y merma actual para cálculo de ROI de planta',
+            'desc' => 'Calcular retorno de inversión proyectado por reducción de mermas y aumento de productividad operativa.',
+            'fecha_venc' => $en_dos_dias . ' 09:30:00'
+        ]
+    ];
+
+    $creados = 0;
+    foreach ($compromisos as $comp) {
+        $contacto = $contactos[$comp['c_idx'] % count($contactos)];
+        $cid = (int)$contacto['id'];
+        $stmt = $db->prepare("INSERT INTO actividades (contacto_id, tipo, asunto, descripcion, fecha_vencimiento, completada, resultado, prioridad, categoria_compromiso) VALUES (?, ?, ?, ?, ?, 0, 'pendiente', ?, ?)");
+        $stmt->bindValue(1, $cid, SQLITE3_INTEGER);
+        $stmt->bindValue(2, $comp['tipo'], SQLITE3_TEXT);
+        $stmt->bindValue(3, $comp['asunto'], SQLITE3_TEXT);
+        $stmt->bindValue(4, $comp['desc'], SQLITE3_TEXT);
+        $stmt->bindValue(5, $comp['fecha_venc'], SQLITE3_TEXT);
+        $stmt->bindValue(6, $comp['prioridad'], SQLITE3_TEXT);
+        $stmt->bindValue(7, $comp['categoria'], SQLITE3_TEXT);
+        $stmt->execute();
+        $creados++;
+    }
+    return $creados;
+}
+
 // Limpieza mensual o reset controlado de la base de datos
 function limpiar_base_datos_controlada($db, $opciones = []) {
     $db->exec('BEGIN TRANSACTION');
@@ -997,4 +1095,11 @@ function generar_csv_hoja_prueba($delimitador = ',') {
     $csv = stream_get_contents($out);
     fclose($out);
     return $csv;
+}
+
+// Auto-inicializar compromisos para el calendario si hay contactos pero 0 tareas pendientes
+if ($db->querySingle("SELECT COUNT(*) FROM actividades WHERE tipo = 'tarea' AND completada = 0") == 0) {
+    if ($db->querySingle("SELECT COUNT(*) FROM contactos") > 0) {
+        @inicializar_compromisos_agenda_demo($db);
+    }
 }

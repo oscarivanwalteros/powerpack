@@ -62,10 +62,10 @@ $prioridad_alta_count = (int)$db->querySingle("SELECT COUNT(*) FROM contactos WH
         <div class="value" style="color:var(--success)">$<?= number_format($total_ganado_monto, 0) ?></div>
         <div class="sub"><?= $ganados ?> clientes cerrados con éxito</div>
     </div>
-    <div class="metric-card" style="border-top:4px solid <?= $total_tareas_pendientes > 0 ? 'var(--warning)' : '#64748b' ?>">
-        <div class="label">Tareas Pendientes</div>
-        <div class="value" style="color:<?= $total_tareas_pendientes > 0 ? 'var(--warning)' : 'inherit' ?>"><?= $total_tareas_pendientes ?></div>
-        <div class="sub"><a href="?page=tareas" style="color:var(--email);font-weight:600">Ver lista de tareas →</a></div>
+    <div class="metric-card" style="border-top:4px solid <?= $total_tareas_pendientes > 0 ? '#ef4444' : '#64748b' ?>">
+        <div class="label">📅 Agenda & Compromisos Hoy</div>
+        <div class="value" style="color:<?= $total_tareas_pendientes > 0 ? '#dc2626' : 'inherit' ?>"><?= $total_tareas_pendientes ?></div>
+        <div class="sub"><a href="?page=calendario" style="color:var(--brand-blue);font-weight:700">Ver Agenda & Calendario →</a></div>
     </div>
 </div>
 
@@ -75,10 +75,10 @@ $prioridad_alta_count = (int)$db->querySingle("SELECT COUNT(*) FROM contactos WH
     <div style="background:#fff;border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-sm);padding:22px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
             <div>
-                <h3 style="font-size:15px;font-weight:800">✅ Tareas y Seguimientos Prioritarios</h3>
-                <p style="font-size:12px;color:var(--fg-secondary)">Llamadas y tareas programadas que requieren tu atención</p>
+                <h3 style="font-size:15px;font-weight:800">📅 Agenda de Hoy & Compromisos Prioritarios</h3>
+                <p style="font-size:12px;color:var(--fg-secondary)">Llamadas, cotizaciones e investigaciones programadas para hoy</p>
             </div>
-            <a href="?page=tareas" class="btn btn-secondary btn-sm">Ver todas</a>
+            <a href="?page=calendario" class="btn btn-secondary btn-sm" style="font-weight:700">📅 Ver Calendario Completo</a>
         </div>
 
         <div style="display:flex;flex-direction:column;gap:10px">
