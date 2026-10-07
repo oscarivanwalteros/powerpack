@@ -4,6 +4,8 @@
  * Soporta Google Gemini (Gemini 2.0 / 1.5 Flash), OpenAI y Motor Heurístico de Respaldo
  */
 
+require_once __DIR__ . '/db.php';
+
 if (!function_exists('get_ai_default_knowledge')) {
     function get_ai_default_knowledge() {
         return "=== REPOSITORIO EMPRESARIAL & BASE DE CONOCIMIENTO POWER PACK ===
@@ -882,7 +884,7 @@ function html_a_texto_limpio($html) {
     return trim($txt);
 }
 
-// Respaldo heurístico e interactivo offline para subagentes
+// Respaldo heurístico e interactivo offline para subagentes (adaptativo a las instrucciones del usuario)
 function copilot_subagente_offline($subagent, $skill, $contacto, $instrucciones_usuario, $borrador_actual = []) {
     $canal = $subagent['canal'] ?? 'email';
     $nombre = trim(($contacto['nombre'] ?? '') . ' ' . ($contacto['apellido'] ?? '')) ?: '{nombre}';
@@ -890,32 +892,105 @@ function copilot_subagente_offline($subagent, $skill, $contacto, $instrucciones_
     $skill_nombre = $skill['nombre'] ?? 'Redacción Estratégica B2B';
     $skill_codigo = $skill['codigo'] ?? '';
 
+    $idea = trim((string)$instrucciones_usuario);
+
+    // Extraer el producto, maquinaria o requerimiento principal mencionado por el usuario
+    $producto_tema = '';
+    if (!empty($idea)) {
+        // Limpiar prefijos conversacionales como "ofrecer la", "presentar el", "cotizar", etc.
+        $patrones_prefijo = [
+            '/^(ofrecer|presentar|proponer|cotizar|enviar|compartir|mostrar|hablar de|dar información de|promocionar|vender|información de|asesorar sobre|dar propuesta de)\s+(el|la|los|las|un|una|unos|unas|nuestra|nuestro)?\s*/iu',
+            '/^(quiero ofrecer|quisiera ofrecer|me gustaría ofrecer|favor ofrecer|quiero presentar|quisiera presentar|favor presentar)\s+(el|la|los|las|un|una|unos|unas)?\s*/iu'
+        ];
+        $tema_limpio = $idea;
+        foreach ($patrones_prefijo as $pat) {
+            $tema_limpio = preg_replace($pat, '', $tema_limpio);
+        }
+        $tema_limpio = trim($tema_limpio, " .:;,!?\t\n\r");
+        if (!empty($tema_limpio) && mb_strlen($tema_limpio) <= 120) {
+            $producto_tema = ucwords(mb_strtolower($tema_limpio, 'UTF-8'));
+        }
+    }
+
     if ($canal === 'email') {
-        $asunto = "Eficiencia y Continuidad Operativa en Línea de Empaque para $empresa | Power Pack";
+        $emp_txt = ($empresa && $empresa !== '{empresa}') ? " para $empresa" : "";
+        
+        // Asunto dinámico basado en lo que el usuario escribió
+        if (!empty($producto_tema)) {
+            $asunto = "Propuesta de $producto_tema$emp_txt | Power Pack";
+        } else {
+            $asunto = "Eficiencia y Continuidad Operativa en Línea de Empaque$emp_txt | Power Pack";
+        }
+
+        // Mención del producto o soluciones en el cuerpo
+        $mencion_producto = !empty($producto_tema) 
+            ? "nuestra tecnología en <strong>$producto_tema</strong>" 
+            : "nuestras soluciones en <strong>maquinaria industrial de empaque, selladoras continuas y dosificadoras de alta precisión</strong>";
+
         $cuerpo = "<p>Estimado(a) <strong>$nombre</strong>,</p>
-<p>Le escribe el equipo comercial de <strong>Power Pack SAS</strong>. Esperamos que se encuentre muy bien en <strong>$empresa</strong>.</p>
-<p>Sabemos que mantener la eficiencia en el empaque y sellado sin paradas de planta no programadas es un reto constante. Por ello, queremos presentarle nuestras soluciones en <strong>maquinaria industrial de empaque, selladoras continuas con fechador de lote integrado y dosificadoras de alta precisión en acero inoxidable 304/316</strong>.</p>
-<p><strong>Lo que distingue a Power Pack en la industria:</strong></p>
+<p>Le escribe el equipo comercial de <strong>Power Pack SAS</strong>. Esperamos que se encuentre muy bien" . ($empresa && $empresa !== '{empresa}' ? " en <strong>$empresa</strong>" : "") . ".</p>
+<p>Nos ponemos en contacto con el objetivo de presentarle $mencion_producto, un equipo industrial diseñado para optimizar el rendimiento de planta, elevar la seguridad en empaque y despacho, y asegurar una operación continua sin mermas.</p>
+<p><strong>Ventajas competitivas y respaldo oficial Power Pack:</strong></p>
 <ul>
     <li><strong>12 Meses de Garantía</strong> directa en estructura y componentes mecánicos.</li>
-    <li><strong>Disponibilidad Inmediata</strong> de equipos y repuestos en bodega Bogotá (evitando meses de importación marítima).</li>
-    <li><strong>Soporte Técnico Especializado</strong> y puesta en marcha con capacitación a sus operarios.</li>
+    <li><strong>Disponibilidad Inmediata en Bogotá</strong> de equipos y repuestos originales (evitando semanas o meses de importación).</li>
+    <li><strong>Acompañamiento Técnico Especializado</strong> con instalación, puesta en marcha y capacitación operativa en planta.</li>
 </ul>
-<p>¿Tendría 10 minutos esta semana para una breve llamada técnica o le gustaría coordinar una visita a nuestro Showroom en Bogotá (Calle 161 # 54 - 25) para probar las máquinas con su producto?</p>
-<p>Atentamente,<br><strong>Power Pack SAS</strong><br>Soluciones Industriales de Empaque<br>Calle 161 # 54 - 25, Bogotá • Tel: +57 300 467 0474<br><a href=\"https://powerpack.com.co\">www.powerpack.com.co</a></p>";
+<p>¿Tendría 10 minutos esta semana para una breve llamada técnica o le gustaría coordinar una visita a nuestro Showroom en Bogotá (Calle 161 # 54 - 25) para realizar pruebas reales con su producto?</p>
+<p>Quedamos a su entera disposición.<br><br>Atentamente,<br><strong>Power Pack SAS</strong><br>Soluciones Industriales de Empaque<br>Calle 161 # 54 - 25, Bogotá • Tel / WhatsApp: +57 300 467 0474<br><a href=\"https://powerpack.com.co\">www.powerpack.com.co</a></p>";
 
+        // Adaptación si seleccionó habilidad de reactivación
         if (strpos($skill_codigo, 'reactivacion') !== false) {
-            $asunto = "¿Continuamos con la propuesta de empaque para $empresa? | Power Pack";
+            $asunto = !empty($producto_tema) ? "¿Continuamos evaluando la $producto_tema para $empresa? | Power Pack" : "¿Continuamos con la propuesta de empaque para $empresa? | Power Pack";
+            $prod_ref = !empty($producto_tema) ? "la adquisición de la <strong>$producto_tema</strong>" : "la adquisición de la maquinaria de empaque";
             $cuerpo = "<p>Hola <strong>$nombre</strong>,</p>
-<p>Te escribo brevemente porque sé lo ocupadas que son las semanas operativas en <strong>$empresa</strong>.</p>
-<p>¿Sigue siendo prioridad para ustedes la adquisición de la maquinaria de empaque este trimestre, o prefieres que pausemos el seguimiento por ahora para no saturar tu correo?</p>
-<p>Por cortesía comercial podemos reservar la disponibilidad inmediata hasta fin de mes.</p>
+<p>Te escribo brevemente porque sé lo ocupadas que son las semanas operativas" . ($empresa && $empresa !== '{empresa}' ? " en <strong>$empresa</strong>" : "") . ".</p>
+<p>¿Sigue siendo prioridad para ustedes $prod_ref este trimestre, o prefieres que pausemos el seguimiento por ahora para no saturar tu correo?</p>
+<p>Por cortesía comercial podemos reservar la disponibilidad inmediata y condiciones de entrega hasta fin de mes si aún les interesa evaluar el equipo.</p>
 <p>Cordialmente,<br><strong>Power Pack SAS</strong><br>Tel: +57 300 467 0474</p>";
         }
 
+        // Adaptación si seleccionó seguimiento de cotización
+        if (strpos($skill_codigo, 'seguimiento') !== false) {
+            $asunto = !empty($producto_tema) ? "Seguimiento a propuesta de $producto_tema$emp_txt | Power Pack" : "Seguimiento a cotización formal de maquinaria$emp_txt | Power Pack";
+            $cuerpo = "<p>Estimado(a) <strong>$nombre</strong>,</p>
+<p>Espero que todo marche excelente" . ($empresa && $empresa !== '{empresa}' ? " en <strong>$empresa</strong>" : "") . ".</p>
+<p>Le escribo para dar seguimiento a la propuesta técnico-comercial de $mencion_producto que revisamos recientemente.</p>
+<p>Queremos asegurarnos de que la información técnica y económica haya sido clara y resolver cualquier duda que haya surgido en el comité de planta o compras.</p>
+<p>Le recordamos que contamos con disponibilidad para entrega inmediata en Bogotá y 12 meses de garantía directa.</p>
+<p>¿Pudieron evaluar el documento o le gustaría que coordinemos una breve llamada de 10 minutos para revisar los puntos clave?</p>
+<p>Atentamente,<br><strong>Power Pack SAS</strong><br>Tel: +57 300 467 0474</p>";
+        }
+
+        // Adaptación si seleccionó post feria
+        if (strpos($skill_codigo, 'post_feria') !== false) {
+            $asunto = !empty($producto_tema) ? "Un gusto saludarte tras la feria industrial - $producto_tema | Power Pack" : "Un gusto saludarte tras la feria industrial | Power Pack";
+            $cuerpo = "<p>Estimado(a) <strong>$nombre</strong>,</p>
+<p>Fue un gran gusto conversar y coincidir durante la feria industrial.</p>
+<p>Tal como comentamos, en <strong>Power Pack SAS</strong> somos especialistas en soluciones de $mencion_producto orientadas a maximizar la productividad y eliminar cuellos de botella en plantas como" . ($empresa && $empresa !== '{empresa}' ? " <strong>$empresa</strong>" : " la suya") . ".</p>
+<p>Queremos extenderle una invitación formal a nuestro Showroom en Bogotá (Calle 161 # 54 - 25) para que traiga muestras de su producto y hagamos pruebas en vivo sin costo ni compromiso.</p>
+<p>¿Qué día de esta semana o la próxima le quedaría conveniente coordinar una breve sesión técnica?</p>
+<p>Cordialmente,<br><strong>Power Pack SAS</strong><br>Tel: +57 300 467 0474</p>";
+        }
+
+        // Adaptación si seleccionó retorno de inversión (ROI)
+        if (strpos($skill_codigo, 'retorno_inversion') !== false) {
+            $asunto = !empty($producto_tema) ? "Análisis de retorno de inversión (ROI) para $producto_tema | Power Pack" : "Análisis de retorno de inversión y amortización | Power Pack";
+            $cuerpo = "<p>Estimado(a) <strong>$nombre</strong>,</p>
+<p>Espero que tenga una productiva semana" . ($empresa && $empresa !== '{empresa}' ? " en <strong>$empresa</strong>" : "") . ".</p>
+<p>Al evaluar la incorporación de $mencion_producto, el factor decisivo es el tiempo de recuperación de la inversión. Nuestros equipos están diseñados para amortizarse rápidamente gracias a reducción de mermas y aumento en velocidad operativa.</p>
+<p>Contamos con 12 meses de garantía, soporte técnico de fábrica y repuestos disponibles en Bogotá.</p>
+<p>¿Le interesaría que revisemos una estimación numérica de ahorro operativo para su volumen de producción actual?</p>
+<p>Atentamente,<br><strong>Power Pack SAS</strong><br>Tel: +57 300 467 0474</p>";
+        }
+
+        $feedback = !empty($producto_tema)
+            ? "He redactado la propuesta de '{$producto_tema}' para {$nombre}, incorporando los 12 meses de garantía, stock en Bogotá y la invitación al Showroom."
+            : "He estructurado el correo aplicando la habilidad de '{$skill_nombre}' con la propuesta de valor de Power Pack.";
+
         return [
             'ok' => true,
-            'respuesta_chat' => "He estructurado el correo aplicando la habilidad de '{$skill_nombre}'. El mensaje incluye la propuesta de valor de Power Pack (garantía de 1 año, stock en Bogotá y respaldo técnico) con llamado a la acción claro.",
+            'respuesta_chat' => $feedback,
             'asunto' => $asunto,
             'cuerpo_html' => $cuerpo,
             'cuerpo_texto' => html_a_texto_limpio($cuerpo),
@@ -924,21 +999,23 @@ function copilot_subagente_offline($subagent, $skill, $contacto, $instrucciones_
         ];
     } else {
         // WhatsApp
-        $msg = "Hola *{$nombre}*, un gusto saludarte. Soy Oscar Walteros de *Power Pack SAS* ⚙️\n\nTe escribo porque apoyamos a plantas como *{$empresa}* en optimizar sus líneas de empaque y sellado con maquinaria industrial de alta velocidad.\n\nContamos con equipos para *entrega inmediata en Bogotá*, repuestos locales y *12 meses de garantía directa*.\n\n¿En qué tipo de producto o máquina de empaque están enfocando sus mejoras actualmente para compartirte un video corto en operación? 🤝";
+        $prod_wa = !empty($producto_tema) ? $producto_tema : 'maquinaria industrial de empaque y sellado';
+        $msg = "Hola *{$nombre}*, un gusto saludarte. Soy Oscar Walteros de *Power Pack SAS* ⚙️\n\nTe escribo porque apoyamos a plantas como *{$empresa}* con nuestra tecnología en *{$prod_wa}* para optimizar sus líneas de producción y despacho.\n\nContamos con equipos para *entrega inmediata en Bogotá*, repuestos locales y *12 meses de garantía directa*.\n\n¿Tendrías 5 minutos para compartirte especificaciones y un video corto en operación de la *{$prod_wa}*? 🤝";
 
         if (strpos($skill_codigo, 'aviso_cotizacion') !== false) {
-            $msg = "Hola *{$nombre}*, un saludo cordial 🤝\n\nAcabo de enviarte a tu correo la cotización formal con las especificaciones técnicas completas y disponibilidad de entrega inmediata de *Power Pack*.\n\n¿Pudiste recibirlo bien en tu bandeja de entrada o prefieres que te adjunte el documento en PDF también por aquí?";
+            $msg = "Hola *{$nombre}*, un saludo cordial 🤝\n\nAcabo de enviarte a tu correo la cotización formal de *{$prod_wa}* con especificaciones completas y disponibilidad de entrega inmediata de *Power Pack*.\n\n¿Pudiste recibirlo bien en tu bandeja de entrada o prefieres que te adjunte el documento en PDF también por aquí?";
         } elseif (strpos($skill_codigo, 'showroom') !== false) {
-            $msg = "¡Hola *{$nombre}*! 👋 Desde *Power Pack* queremos invitarte a nuestro Showroom técnico en Bogotá (Calle 161 # 54 - 25).\n\nPuedes traer muestras de tu producto en *{$empresa}* y realizamos pruebas de sellado y velocidad en vivo sin compromiso. ¿Qué día de esta semana te quedaría cómodo visitarnos? 🏢";
+            $msg = "¡Hola *{$nombre}*! 👋 Desde *Power Pack* queremos invitarte a nuestro Showroom técnico en Bogotá (Calle 161 # 54 - 25).\n\nPuedes traer muestras de tu producto en *{$empresa}* y realizamos pruebas con la *{$prod_wa}* en vivo sin compromiso. ¿Qué día de esta semana te quedaría cómodo visitarnos? 🏢";
         } elseif (strpos($skill_codigo, 'reactivacion') !== false) {
-            $msg = "Hola *{$nombre}*, ¿cómo va todo en *{$empresa}*? ☕\n\n¿Pudieron evaluar la propuesta del equipo de empaque o prefieres que lo retomemos el próximo mes? Un saludo.";
+            $msg = "Hola *{$nombre}*, ¿cómo va todo en *{$empresa}*? ☕\n\n¿Pudieron evaluar la propuesta de la *{$prod_wa}* o prefieres que lo retomemos el próximo mes? Un saludo.";
         }
 
         return [
             'ok' => true,
-            'respuesta_chat' => "He preparado el mensaje para WhatsApp con formato móvil (*negritas*, viñetas y emojis sobrios) adaptado a la habilidad '{$skill_nombre}'.",
+            'respuesta_chat' => "He preparado el mensaje para WhatsApp enfocado en '{$prod_wa}' con formato móvil (*negritas*, viñetas y emojis sobrios).",
             'asunto' => '',
             'cuerpo_html' => nl2br($msg),
+            'cuerpo_texto' => $msg,
             'mensaje' => $msg,
             'origen' => "Subagente {$subagent['nombre']} (Motor Heurístico Power Pack)"
         ];

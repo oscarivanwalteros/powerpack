@@ -314,6 +314,7 @@ if ($action === 'subagente_chat' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 // 8. Envío de Correo desde el Estudio (Individual o Masivo con SMTP Hostinger)
 if ($action === 'enviar_correo_estudio' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     require_once __DIR__ . '/mailer.php';
+    require_once __DIR__ . '/ai.php';
 
     $input = json_decode(file_get_contents('php://input'), true);
     if (!$input) $input = $_POST;
@@ -395,8 +396,9 @@ if ($action === 'enviar_correo_estudio' && $_SERVER['REQUEST_METHOD'] === 'POST'
         if ($contacto_id > 0 && $envio['ok']) {
             $stmt_act = $db->prepare("INSERT INTO actividades (contacto_id, tipo, asunto, descripcion, resultado, completada) VALUES (?, 'email', ?, ?, 'enviado', 1)");
             $stmt_act->bindValue(1, $contacto_id, SQLITE3_INTEGER);
-            $stmt_act->bindValue(2, "Correo enviado vía Estudio IA: " . mb_substr($asunto_final, 0, 50), SQLITE3_TEXT);
-            $stmt_act->bindValue(3, "Asunto: $asunto_final\nDestinatario: $dest_email\nSubagente: $subagente ($skill_codigo)", SQLITE3_TEXT);
+            $stmt_act->bindValue(2, "Correo enviado: " . mb_substr($asunto_final, 0, 50), SQLITE3_TEXT);
+            $desc_act = "Asunto: $asunto_final\nPara: $dest_email\n\n" . (function_exists('html_a_texto_limpio') ? html_a_texto_limpio($cuerpo_final) : strip_tags($cuerpo_final));
+            $stmt_act->bindValue(3, $desc_act, SQLITE3_TEXT);
             $stmt_act->execute();
             $db->exec("UPDATE contactos SET ultima_actividad = datetime('now') WHERE id = $contacto_id");
         }
@@ -404,7 +406,9 @@ if ($action === 'enviar_correo_estudio' && $_SERVER['REQUEST_METHOD'] === 'POST'
         echo json_encode([
             'ok' => $envio['ok'],
             'destinatario' => $dest_email,
-            'mensaje' => $envio['ok'] ? "Correo enviado exitosamente a $dest_email" : $envio['error']
+            'contacto_id' => $contacto_id,
+            'mensaje' => $envio['ok'] ? "Correo enviado exitosamente a $dest_email" : $envio['error'],
+            'error' => $envio['ok'] ? '' : $envio['error']
         ]);
         exit;
     } else {

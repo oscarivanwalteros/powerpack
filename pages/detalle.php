@@ -34,6 +34,23 @@ $ai_provider = get_config($db, 'ai_provider', 'gemini');
 $clean_tel = limpiar_telefono_whatsapp($c['telefono']);
 ?>
 
+<?php if (($_GET['msg'] ?? '') === 'email_enviado'): ?>
+<div style="background:#ecfdf5;border:1px solid #10b981;border-radius:12px;padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;gap:14px;box-shadow:0 4px 12px rgba(16,185,129,0.15)">
+    <div style="display:flex;align-items:center;gap:14px">
+        <span style="font-size:28px">🚀</span>
+        <div>
+            <strong style="font-size:15px;color:#065f46">¡Correo despachado con éxito y registrado en la ficha de <?= h($c['nombre']) ?>!</strong>
+            <div style="font-size:12px;color:#047857;margin-top:2px">El mensaje fue enviado vía SMTP de Hostinger y ya está registrado en la cronología de actividades de este cliente abajo.</div>
+        </div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+        <a href="?page=correos&contacto_id=<?= $c['id'] ?>" class="btn btn-secondary btn-sm" style="font-size:11px;font-weight:700">
+            ✉️ Redactar Otro Correo
+        </a>
+    </div>
+</div>
+<?php endif; ?>
+
 <!-- Header del Contacto estilo HubSpot -->
 <div style="background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-bottom:24px;box-shadow:var(--shadow-sm);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:20px">
     <div style="display:flex;align-items:center;gap:18px">

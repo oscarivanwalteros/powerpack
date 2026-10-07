@@ -306,21 +306,24 @@ if ($res_h) {
                 </button>
             </div>
 
-            <!-- CAMPO DE IDEA DE ENTRADA Y BOTÓN GIGANTE -->
-            <div style="display:flex;gap:10px;align-items:stretch;flex-wrap:wrap">
-                <input type="text" id="prompt-idea-usuario" class="form-control" 
-                       style="font-size:14px;padding:12px 16px;border-radius:8px;border:2px solid #93c5fd;flex:1;min-width:280px" 
-                       placeholder="¿Qué deseas proponerle? Ej: Ofrecerle selladora continua con fechador de lote, entrega inmediata en Bogotá y visita al Showroom..."
-                       onkeydown="if(event.key==='Enter') ejecutarRedaccionIA()">
+            <!-- CAMPO DE IDEA DE ENTRADA (3 O 4 RENGLONES) Y BOTÓN DE REDACCIÓN -->
+            <div style="display:flex;gap:12px;align-items:stretch;flex-wrap:wrap">
+                <textarea id="prompt-idea-usuario" class="form-control" rows="3"
+                          style="font-size:14px;line-height:1.6;padding:12px 16px;border-radius:8px;border:2px solid #93c5fd;flex:1;min-width:300px;resize:vertical;background:#fff;font-family:inherit" 
+                          placeholder="¿Qué deseas proponerle a este cliente? Escribe aquí en 3 o 4 renglones (Ej: Ofrecer la paletizadora noxon robot 3, destacar garantía de 12 meses, stock en Bogotá e invitarlo a demostración en planta)..."
+                          onkeydown="if(event.key==='Enter' && (event.ctrlKey || event.metaKey)) { event.preventDefault(); ejecutarRedaccionIA(); }"></textarea>
 
-                <button type="button" id="btn-generar-ia" class="btn btn-primary" onclick="ejecutarRedaccionIA()" 
-                        style="padding:12px 24px;font-size:14px;font-weight:800;background:linear-gradient(135deg, #2c60a4 0%, #1e40af 100%);box-shadow:0 4px 12px rgba(44,96,164,0.3);white-space:nowrap">
-                    <span id="txt-btn-ia">✨ Redactar Correo con IA</span>
-                    <span id="spin-btn-ia" style="display:none">⏳ Redactando...</span>
-                </button>
+                <div style="display:flex;flex-direction:column;justify-content:center;gap:4px">
+                    <button type="button" id="btn-generar-ia" class="btn btn-primary" onclick="ejecutarRedaccionIA()" 
+                            style="padding:14px 26px;font-size:15px;font-weight:900;background:linear-gradient(135deg, #2c60a4 0%, #1e40af 100%);box-shadow:0 4px 14px rgba(44,96,164,0.35);white-space:nowrap;height:100%;min-height:54px;display:flex;align-items:center;justify-content:center;gap:8px">
+                        <span id="txt-btn-ia">✨ Redactar Correo con IA</span>
+                        <span id="spin-btn-ia" style="display:none">⏳ Redactando en vivo...</span>
+                    </button>
+                    <span style="font-size:10px;color:#64748b;text-align:center">O pulsa Ctrl+Enter</span>
+                </div>
             </div>
             
-            <div id="status-ia-feedback" style="display:none;margin-top:10px;font-size:12px;padding:8px 12px;background:#fff;border-radius:6px;border-left:3px solid #10b981;color:#065f46">
+            <div id="status-ia-feedback" style="display:none;margin-top:12px;font-size:13px;padding:10px 14px;background:#fff;border-radius:8px;border-left:4px solid #10b981;box-shadow:var(--shadow-sm);color:#065f46">
             </div>
         </div>
 
@@ -775,6 +778,12 @@ async function ejecutarRedaccionIA() {
     document.getElementById('spin-btn-ia').style.display = 'inline';
     document.getElementById('btn-generar-ia').disabled = true;
 
+    const feed = document.getElementById('status-ia-feedback');
+    feed.style.display = 'block';
+    feed.style.borderColor = '#3b82f6';
+    feed.style.color = '#1e40af';
+    feed.innerHTML = `⏳ <strong>Redactando propuesta en tiempo real...</strong> Analizando tus indicaciones y actualizando la carta abajo.`;
+
     try {
         const resp = await fetch('api.php?action=subagente_chat', {
             method: 'POST',
@@ -793,26 +802,55 @@ async function ejecutarRedaccionIA() {
 
         const data = await resp.json();
         if (data.ok) {
+            const inputAsunto = document.getElementById('carta-asunto');
+            const textareaCuerpo = document.getElementById('carta-cuerpo');
+
             // AUTO-RELLENAR ASUNTO Y CARTA EN LA PREVISUALIZACIÓN DIRECTAMENTE
             if (data.asunto) {
-                document.getElementById('carta-asunto').value = data.asunto;
+                inputAsunto.value = data.asunto;
             }
             if (data.cuerpo_texto || data.cuerpo_html) {
-                document.getElementById('carta-cuerpo').value = data.cuerpo_texto || data.cuerpo_html.replace(/<[^>]*>/g, '');
+                let textoFinal = data.cuerpo_texto || data.cuerpo_html.replace(/<[^>]*>/g, '');
+                
+                // Si hay un cliente seleccionado, asegurar que cualquier variable se reemplace inmediatamente
+                const destNom = document.getElementById('dest-nombre').value.trim();
+                const destEmp = document.getElementById('dest-empresa').value.trim();
+                if (destNom) textoFinal = textoFinal.replace(/\{nombre\}/gi, destNom);
+                if (destEmp) textoFinal = textoFinal.replace(/\{empresa\}/gi, destEmp);
+
+                textareaCuerpo.value = textoFinal;
             }
 
-            // Notificación sutil de éxito
-            const feed = document.getElementById('status-ia-feedback');
+            // EFECTO VISUAL DE CONFIRMACIÓN INMEDIATA (Fogonazo esmeralda suave)
+            inputAsunto.style.transition = 'background-color 0.4s ease, border-color 0.4s ease';
+            textareaCuerpo.style.transition = 'background-color 0.4s ease, border-color 0.4s ease';
+            inputAsunto.style.backgroundColor = '#ecfdf5';
+            inputAsunto.style.borderColor = '#10b981';
+            textareaCuerpo.style.backgroundColor = '#ecfdf5';
+
+            setTimeout(() => {
+                inputAsunto.style.backgroundColor = '#ffffff';
+                inputAsunto.style.borderColor = '#cbd5e1';
+                textareaCuerpo.style.backgroundColor = '#ffffff';
+            }, 1800);
+
+            // Notificación clara de éxito
             feed.style.display = 'block';
-            feed.innerHTML = `✅ <strong>Redactado con éxito:</strong> ${data.respuesta_chat || 'Borrador generado y listo para enviar.'} <em>(${data.origen || 'IA Power Pack'})</em>`;
+            feed.style.borderColor = '#10b981';
+            feed.style.color = '#065f46';
+            feed.innerHTML = `✅ <strong>¡Cambio aplicado inmediatamente abajo!</strong> ${data.respuesta_chat || 'Borrador generado y listo para enviar.'} <span style="font-size:11px;color:#64748b">(${data.origen || 'IA Power Pack'})</span>`;
             
-            // Scroll suave a la carta para que el usuario vea el resultado inmediatamente
-            document.getElementById('carta-asunto').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // Scroll suave a la carta para que el usuario vea el cambio en vivo
+            inputAsunto.scrollIntoView({ behavior: 'smooth', block: 'center' });
         } else {
-            alert('Aviso de la IA: ' + (data.error || 'No se pudo generar el correo'));
+            feed.style.borderColor = '#ef4444';
+            feed.style.color = '#991b1b';
+            feed.innerHTML = `⚠️ Aviso de la IA: ${data.error || 'No se pudo generar el correo'}`;
         }
     } catch (e) {
-        alert('Error conectando con la IA: ' + e.message);
+        feed.style.borderColor = '#ef4444';
+        feed.style.color = '#991b1b';
+        feed.innerHTML = `❌ Error de conexión con la IA: ${e.message}`;
     } finally {
         document.getElementById('txt-btn-ia').style.display = 'inline';
         document.getElementById('spin-btn-ia').style.display = 'none';
@@ -838,10 +876,11 @@ async function ejecutarDespachoCorreo() {
         subagente: 'email_copywriter'
     };
 
+    let destId = 0;
     if (modoActual === 'individual') {
         const destEmail = document.getElementById('dest-email').value.trim();
         const destNombre = document.getElementById('dest-nombre').value.trim();
-        const destId = parseInt(document.getElementById('dest-id').value) || 0;
+        destId = parseInt(document.getElementById('dest-id').value) || 0;
 
         if (!destEmail) {
             alert('Por favor selecciona un cliente destinatario primero.');
@@ -856,6 +895,9 @@ async function ejecutarDespachoCorreo() {
         payload.contacto_id = destId;
         payload.destinatario_email = destEmail;
         payload.destinatario_nombre = destNombre;
+        payload.destinatario_empresa = document.getElementById('dest-empresa').value.trim();
+        payload.destinatario_cargo = document.getElementById('dest-cargo').value.trim();
+        payload.destinatario_ciudad = document.getElementById('dest-ciudad').value.trim();
     } else {
         // MODO MASIVO POR LISTA DE CHEQUEO
         const seleccionados = Array.from(document.querySelectorAll('.chk-cliente:checked')).map(chk => parseInt(chk.value));
@@ -887,7 +929,14 @@ async function ejecutarDespachoCorreo() {
         const res = await resp.json();
         if (res.ok) {
             alert('🚀 ' + (res.mensaje || '¡Correo despachado exitosamente vía SMTP!'));
-            window.location.href = 'index.php?page=correos&msg=email_enviado';
+            // Si fue enviado a un cliente específico, llevar DIRECTAMENTE a su ficha para ver el correo registrado
+            if (modoActual === 'individual' && destId > 0) {
+                window.location.href = `index.php?page=detalle&id=${destId}&msg=email_enviado`;
+            } else if (modoActual === 'masivo') {
+                window.location.href = 'index.php?page=correos&modo=historial&msg=campana_enviada';
+            } else {
+                window.location.href = 'index.php?page=correos&msg=email_enviado';
+            }
         } else {
             alert('❌ Error al enviar: ' + (res.error || 'Revisa tu configuración SMTP en Ajustes.'));
         }
@@ -924,9 +973,14 @@ function cerrarModalCorreo() {
 
 // Inicialización
 document.addEventListener('DOMContentLoaded', () => {
-    actualizarContadorChequeo();
-    <?php if ($contacto_pre): ?>
-        actualizarLabelCartaIndividual();
-    <?php endif; ?>
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('modo') === 'historial' || params.get('msg') === 'campana_enviada') {
+        setModoPrincipal('historial');
+    } else {
+        actualizarContadorChequeo();
+        <?php if ($contacto_pre): ?>
+            actualizarLabelCartaIndividual();
+        <?php endif; ?>
+    }
 });
 </script>
