@@ -201,6 +201,37 @@ $db->exec("CREATE TABLE IF NOT EXISTS documentos_ia (
     fecha_subida DATETIME DEFAULT CURRENT_TIMESTAMP
 )");
 
+// Tablas para registro e historial de envíos de subagentes (Email y WhatsApp)
+$db->exec("CREATE TABLE IF NOT EXISTS mensajes_email (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    contacto_id INTEGER,
+    destinatario_email TEXT NOT NULL,
+    destinatario_nombre TEXT,
+    asunto TEXT NOT NULL,
+    cuerpo_html TEXT NOT NULL,
+    subagente TEXT DEFAULT 'email_copywriter',
+    skill_codigo TEXT,
+    estado TEXT DEFAULT 'enviado', -- 'enviado', 'fallido', 'borrador'
+    error_detalle TEXT,
+    es_masivo INTEGER DEFAULT 0,
+    lote_id TEXT,
+    fecha_envio DATETIME DEFAULT CURRENT_TIMESTAMP
+)");
+
+$db->exec("CREATE TABLE IF NOT EXISTS mensajes_whatsapp (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    contacto_id INTEGER,
+    telefono TEXT NOT NULL,
+    destinatario_nombre TEXT,
+    mensaje TEXT NOT NULL,
+    subagente TEXT DEFAULT 'whatsapp_specialist',
+    skill_codigo TEXT,
+    estado TEXT DEFAULT 'enviado', -- 'enviado', 'pendiente', 'cancelado'
+    es_masivo INTEGER DEFAULT 0,
+    lote_id TEXT,
+    fecha_envio DATETIME DEFAULT CURRENT_TIMESTAMP
+)");
+
 // Asegurar que la carpeta de almacenamiento de conocimiento exista con permisos seguros
 if (!is_dir(__DIR__ . '/uploads/conocimiento')) {
     @mkdir(__DIR__ . '/uploads/conocimiento', 0777, true);

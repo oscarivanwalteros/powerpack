@@ -1308,12 +1308,20 @@ header('Content-Type: text/html; charset=utf-8');
             <?php endif; ?>
         </a>
 
-        <div class="sidebar-section" style="margin-top:14px">Inteligencia de Ventas</div>
-        <a href="?page=reportes" class="sidebar-item <?= $page=='reportes'?'active':'' ?>">
-            <span>📈 Embudo & Reportes</span>
+        <div class="sidebar-section" style="margin-top:14px">Agentes & Redacción IA</div>
+        <a href="?page=correos" class="sidebar-item <?= $page=='correos'?'active':'' ?>">
+            <span>✉️ Estudio de Correos IA</span>
+        </a>
+        <a href="?page=whatsapp" class="sidebar-item <?= $page=='whatsapp'?'active':'' ?>">
+            <span>💬 Estudio de WhatsApp IA</span>
         </a>
         <a href="?page=conocimiento" class="sidebar-item <?= $page=='conocimiento'?'active':'' ?>">
             <span>🧠 Repositorio IA & Empresa</span>
+        </a>
+
+        <div class="sidebar-section" style="margin-top:14px">Inteligencia de Ventas</div>
+        <a href="?page=reportes" class="sidebar-item <?= $page=='reportes'?'active':'' ?>">
+            <span>📈 Embudo & Reportes</span>
         </a>
 
         <div class="sidebar-section" style="margin-top:14px">Conexiones & Ajustes</div>
@@ -1438,6 +1446,12 @@ header('Content-Type: text/html; charset=utf-8');
                 break;
             case 'importar':
                 include 'pages/importar.php';
+                break;
+            case 'correos':
+                include 'pages/correos.php';
+                break;
+            case 'whatsapp':
+                include 'pages/whatsapp.php';
                 break;
             case 'conocimiento':
                 include 'pages/conocimiento.php';

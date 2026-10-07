@@ -56,10 +56,10 @@ $clean_tel = limpiar_telefono_whatsapp($c['telefono']);
         </button>
         <a href="?page=nueva_cotizacion&contacto_id=<?= $c['id'] ?>" class="btn btn-primary btn-sm">📄 + Cotizar</a>
         <?php if($clean_tel): ?>
-        <button onclick="activarTab('tab-wa')" class="btn btn-whatsapp btn-sm">💬 Enviar WhatsApp</button>
+        <a href="?page=whatsapp&contacto_id=<?= $c['id'] ?>" class="btn btn-whatsapp btn-sm" title="Redactar y despachar en Estudio de WhatsApp IA">💬 WhatsApp IA</a>
         <?php endif; ?>
         <?php if($c['email']): ?>
-        <button onclick="activarTab('tab-email')" class="btn btn-email btn-sm">✉️ Redactar Email</button>
+        <a href="?page=correos&contacto_id=<?= $c['id'] ?>" class="btn btn-email btn-sm" title="Redactar y enviar en Estudio de Correos IA">✉️ Correo IA</a>
         <?php endif; ?>
         <button onclick="activarTab('tab-tarea')" class="btn btn-secondary btn-sm">✅ + Tarea</button>
         <button onclick="document.getElementById('modalEditar').style.display='flex'" class="btn btn-secondary btn-sm">✏️ Editar</button>

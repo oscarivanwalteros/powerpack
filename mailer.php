@@ -119,6 +119,15 @@ function enviar_correo_smtp($to, $asunto, $cuerpo_html, $config = []) {
         return ['ok' => false, 'error' => "Comando DATA rechazado: $res"];
     }
 
+    // Construir cabeceras MIME estándar para el protocolo SMTP
+    $headers  = "MIME-Version: 1.0\r\n";
+    $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
+    $headers .= "From: =?UTF-8?B?" . base64_encode($from_name) . "?= <" . $from_email . ">\r\n";
+    $headers .= "To: <" . $to . ">\r\n";
+    $headers .= "Subject: =?UTF-8?B?" . base64_encode($asunto) . "?=\r\n";
+    $headers .= "Date: " . date('r') . "\r\n";
+    $headers .= "X-Mailer: PowerPack-Mailer/1.0\r\n\r\n";
+
     // Envolver en plantilla corporativa oficial de Power Pack
     if (strpos($cuerpo_html, '<html') === false) {
         $cuerpo_html = '

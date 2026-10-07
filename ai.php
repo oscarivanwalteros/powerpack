@@ -620,3 +620,312 @@ Genera la redacción comercial perfecta ahora.";
         return $backup;
     }
 }
+
+/**
+ * =======================================================================
+ * MOTOR DE SUBAGENTES ESPECIALIZADOS Y ESTUDIOS COLABORATIVOS (IA COPILOT)
+ * =======================================================================
+ */
+
+// Parser liviano para archivos Markdown de skills con metadatos YAML frontmatter
+function parse_markdown_with_frontmatter($file_path) {
+    if (!file_exists($file_path)) return null;
+    $raw = @file_get_contents($file_path);
+    if (!$raw) return null;
+
+    $meta = [];
+    $body = $raw;
+
+    if (preg_match('/^---\s*\r?\n(.*?)\r?\n---\s*\r?\n(.*)$/s', $raw, $matches)) {
+        $frontmatter = $matches[1];
+        $body = trim($matches[2]);
+        $lines = explode("\n", $frontmatter);
+        foreach ($lines as $line) {
+            $line = trim($line);
+            if (empty($line) || $line[0] === '#') continue;
+            if (strpos($line, ':') !== false) {
+                list($key, $val) = explode(':', $line, 2);
+                $key = trim($key);
+                $val = trim($val);
+                $val = trim($val, '"\'');
+                $meta[$key] = $val;
+            }
+        }
+    }
+
+    $meta['contenido'] = $body;
+    $meta['archivo'] = basename($file_path);
+    return $meta;
+}
+
+// Escanea y retorna todos los subagentes disponibles en el directorio agents/
+function get_available_subagents() {
+    $base_dir = __DIR__ . '/agents';
+    $subagents = [];
+    if (!is_dir($base_dir)) return $subagents;
+
+    $dirs = scandir($base_dir);
+    foreach ($dirs as $dir) {
+        if ($dir === '.' || $dir === '..') continue;
+        $agent_path = $base_dir . '/' . $dir;
+        $json_file = $agent_path . '/agent.json';
+        if (is_dir($agent_path) && file_exists($json_file)) {
+            $json_data = json_decode(@file_get_contents($json_file), true);
+            if (!$json_data) $json_data = [];
+
+            $json_data['id'] = $json_data['id'] ?? $dir;
+            $json_data['carpeta'] = $dir;
+            $json_data['path'] = $agent_path;
+
+            // System prompt
+            $system_file = $agent_path . '/system.md';
+            $json_data['system_prompt'] = file_exists($system_file) ? @file_get_contents($system_file) : '';
+
+            // Skills en markdown
+            $skills = [];
+            $skills_dir = $agent_path . '/skills';
+            if (is_dir($skills_dir)) {
+                $files = scandir($skills_dir);
+                foreach ($files as $f) {
+                    if (pathinfo($f, PATHINFO_EXTENSION) === 'md') {
+                        $parsed = parse_markdown_with_frontmatter($skills_dir . '/' . $f);
+                        if ($parsed) {
+                            $skills[] = $parsed;
+                        }
+                    }
+                }
+            }
+            $json_data['skills'] = $skills;
+            $subagents[$dir] = $json_data;
+        }
+    }
+    return $subagents;
+}
+
+// Obtener subagente por identificador o carpeta
+function get_subagent_by_id($subagent_id) {
+    $all = get_available_subagents();
+    if (isset($all[$subagent_id])) return $all[$subagent_id];
+    foreach ($all as $k => $agent) {
+        if (($agent['id'] ?? '') === $subagent_id) {
+            return $agent;
+        }
+    }
+    return null;
+}
+
+// Obtener una habilidad específica de un subagente
+function get_subagent_skill($subagent_id, $skill_code) {
+    $agent = get_subagent_by_id($subagent_id);
+    if (!$agent || empty($agent['skills'])) return null;
+    foreach ($agent['skills'] as $s) {
+        if (($s['codigo'] ?? '') === $skill_code) {
+            return $s;
+        }
+    }
+    return null;
+}
+
+// Función Copilot interactiva para co-redacción iterativa con subagente
+function copilot_subagente_chat($db, $subagent_id, $skill_code, $mensajes, $contacto, $instrucciones_usuario, $borrador_actual = []) {
+    $subagent = get_subagent_by_id($subagent_id);
+    if (!$subagent) {
+        $subagent = [
+            'id' => $subagent_id,
+            'nombre' => 'Subagente Comercial Power Pack',
+            'rol' => 'Especialista en Ventas B2B',
+            'canal' => ($subagent_id === 'whatsapp' ? 'whatsapp' : 'email'),
+            'system_prompt' => 'Eres un asesor senior B2B de Power Pack.'
+        ];
+    }
+
+    $canal = $subagent['canal'] ?? ($subagent_id === 'whatsapp' ? 'whatsapp' : 'email');
+    $skill = get_subagent_skill($subagent_id, $skill_code);
+
+    $settings = get_ai_settings($db);
+    $api_key = trim($settings['api_key']);
+    $provider = $settings['provider'];
+    $model = $settings['model'];
+    $kb = $settings['knowledge'];
+
+    // Datos del contacto o contexto de campaña
+    $nombre = trim(($contacto['nombre'] ?? '') . ' ' . ($contacto['apellido'] ?? ''));
+    if (empty($nombre)) $nombre = '{nombre}';
+    $empresa = trim($contacto['empresa'] ?? '');
+    if (empty($empresa)) $empresa = '{empresa}';
+    $cargo = trim($contacto['cargo'] ?? '');
+    if (empty($cargo)) $cargo = '{cargo}';
+    $ciudad = trim($contacto['ciudad'] ?? '');
+    if (empty($ciudad)) $ciudad = '{ciudad}';
+    $notas = trim($contacto['notas'] ?? '');
+
+    // Construir instrucción de sistema maestra
+    $system_instruction = "Eres el {$subagent['nombre']}, con el rol oficial de '{$subagent['rol']}' en la empresa Power Pack SAS (Colombia).
+{$subagent['system_prompt']}
+
+BASE DE CONOCIMIENTO Y REPOSITORIO CORPORATIVO DE POWER PACK:
+$kb
+
+REGLAS DE TRABAJO COLABORATIVO:
+1. Estás trabajando en una sesión interactiva mano a mano con el asesor comercial humano.
+2. Cada vez que el usuario te dé una instrucción (ej: 'hazlo más corto', 'cambia el enfoque a dosificadoras', 'agrega invitación al showroom'), debes procesarla, mejorar el borrador y devolver tanto una breve explicación de lo que cambiaste como el borrador actualizado.
+3. SIEMPRE debes responder en formato JSON estricto con la siguiente estructura:
+";
+
+    if ($canal === 'email') {
+        $system_instruction .= '{
+  "respuesta_chat": "Comentario conversacional y profesional para el asesor explicando qué ajustes hiciste...",
+  "asunto": "Línea de asunto persuasiva para el correo...",
+  "cuerpo_html": "<p>Cuerpo del correo en HTML limpio con formato profesional, párrafos, negritas y firma...</p>"
+}';
+    } else {
+        $system_instruction .= '{
+  "respuesta_chat": "Comentario conversacional y profesional para el asesor explicando qué ajustes hiciste...",
+  "mensaje": "Texto de WhatsApp formateado con *negritas*, saltos de línea legibles, emojis sobrios y CTA claro..."
+}';
+    }
+
+    // Contexto de la Skill
+    $skill_instruction = "";
+    if ($skill) {
+        $skill_instruction = "\nHABILIDAD ACTIVA SELECCIONADA: {$skill['nombre']} (Código: {$skill['codigo']})
+Descripción de la habilidad: {$skill['descripcion']}
+Instrucciones detalladas de la habilidad:
+{$skill['contenido']}
+Asegúrate de aplicar fielmente los principios de esta habilidad en el borrador.\n";
+    }
+
+    // Historial previo
+    $chat_history_str = "";
+    if (!empty($mensajes) && is_array($mensajes)) {
+        $chat_history_str .= "\nHISTORIAL DE LA CONVERSACIÓN PREVIA CON EL ASESOR:\n";
+        foreach ($mensajes as $m) {
+            $rol_label = ($m['rol'] ?? 'usuario') === 'usuario' ? 'Asesor' : 'Subagente';
+            $chat_history_str .= "- $rol_label: " . ($m['texto'] ?? '') . "\n";
+        }
+    }
+
+    // Estado del borrador actual
+    $draft_str = "";
+    if (!empty($borrador_actual)) {
+        $draft_str .= "\nESTADO ACTUAL DEL BORRADOR:\n";
+        if (!empty($borrador_actual['asunto'])) {
+            $draft_str .= "Asunto actual: " . $borrador_actual['asunto'] . "\n";
+        }
+        if (!empty($borrador_actual['cuerpo'])) {
+            $draft_str .= "Cuerpo actual: " . $borrador_actual['cuerpo'] . "\n";
+        }
+        if (!empty($borrador_actual['mensaje'])) {
+            $draft_str .= "Mensaje actual: " . $borrador_actual['mensaje'] . "\n";
+        }
+    }
+
+    $prompt = "DATOS DEL DESTINATARIO / PROSPECTO:
+- Nombre: $nombre
+- Empresa: $empresa
+- Cargo: $cargo
+- Ciudad: $ciudad
+- Notas / Requerimiento: " . ($notas ?: 'Interés en optimización y maquinaria industrial de empaque') . "
+$skill_instruction
+$draft_str
+$chat_history_str
+NUEVA INSTRUCCIÓN DEL ASESOR HUMANO:
+\"$instrucciones_usuario\"
+
+Genera la respuesta y el borrador optimizado en el formato JSON requerido.";
+
+    // Ejecución con API (Gemini / OpenAI) o motor offline
+    if (!empty($api_key)) {
+        if ($provider === 'openai') {
+            $resp = llamar_openai($api_key, $model, $prompt, $system_instruction);
+        } else {
+            $resp = llamar_gemini($api_key, $model ?: 'gemini-3.8-flash', $prompt, $system_instruction);
+        }
+
+        if ($resp['ok']) {
+            $text = trim($resp['text']);
+            // Limpiar bloques de código markdown si la IA respondió con ```json ... ```
+            if (preg_match('/```(?:json)?\s*([\s\S]*?)\s*```/i', $text, $code_match)) {
+                $text = trim($code_match[1]);
+            }
+
+            $parsed_json = json_decode($text, true);
+            if (is_array($parsed_json) && (!empty($parsed_json['cuerpo_html']) || !empty($parsed_json['mensaje']))) {
+                return [
+                    'ok' => true,
+                    'respuesta_chat' => $parsed_json['respuesta_chat'] ?? 'Borrador actualizado con éxito según tus indicaciones.',
+                    'asunto' => $parsed_json['asunto'] ?? ($borrador_actual['asunto'] ?? 'Propuesta de Soluciones Industriales | Power Pack'),
+                    'cuerpo_html' => $parsed_json['cuerpo_html'] ?? ($parsed_json['mensaje'] ?? ''),
+                    'mensaje' => $parsed_json['mensaje'] ?? ($parsed_json['cuerpo_html'] ?? ''),
+                    'origen' => "Subagente {$subagent['nombre']} ($provider: " . ($resp['model'] ?? $model) . ")"
+                ];
+            }
+        }
+    }
+
+    // Motor Heurístico / Offline de alta calidad para el Subagente
+    return copilot_subagente_offline($subagent, $skill, $contacto, $instrucciones_usuario, $borrador_actual);
+}
+
+// Respaldo heurístico e interactivo offline para subagentes
+function copilot_subagente_offline($subagent, $skill, $contacto, $instrucciones_usuario, $borrador_actual = []) {
+    $canal = $subagent['canal'] ?? 'email';
+    $nombre = trim(($contacto['nombre'] ?? '') . ' ' . ($contacto['apellido'] ?? '')) ?: '{nombre}';
+    $empresa = trim($contacto['empresa'] ?? '') ?: '{empresa}';
+    $skill_nombre = $skill['nombre'] ?? 'Redacción Estratégica B2B';
+    $skill_codigo = $skill['codigo'] ?? '';
+
+    if ($canal === 'email') {
+        $asunto = "Eficiencia y Continuidad Operativa en Línea de Empaque para $empresa | Power Pack";
+        $cuerpo = "<p>Estimado(a) <strong>$nombre</strong>,</p>
+<p>Le escribe el equipo comercial de <strong>Power Pack SAS</strong>. Esperamos que se encuentre muy bien en <strong>$empresa</strong>.</p>
+<p>Sabemos que mantener la eficiencia en el empaque y sellado sin paradas de planta no programadas es un reto constante. Por ello, queremos presentarle nuestras soluciones en <strong>maquinaria industrial de empaque, selladoras continuas con fechador de lote integrado y dosificadoras de alta precisión en acero inoxidable 304/316</strong>.</p>
+<p><strong>Lo que distingue a Power Pack en la industria:</strong></p>
+<ul>
+    <li><strong>12 Meses de Garantía</strong> directa en estructura y componentes mecánicos.</li>
+    <li><strong>Disponibilidad Inmediata</strong> de equipos y repuestos en bodega Bogotá (evitando meses de importación marítima).</li>
+    <li><strong>Soporte Técnico Especializado</strong> y puesta en marcha con capacitación a sus operarios.</li>
+</ul>
+<p>¿Tendría 10 minutos esta semana para una breve llamada técnica o le gustaría coordinar una visita a nuestro Showroom en Bogotá (Calle 161 # 54 - 25) para probar las máquinas con su producto?</p>
+<p>Atentamente,<br><strong>Power Pack SAS</strong><br>Soluciones Industriales de Empaque<br>Calle 161 # 54 - 25, Bogotá • Tel: +57 300 467 0474<br><a href=\"https://powerpack.com.co\">www.powerpack.com.co</a></p>";
+
+        if (strpos($skill_codigo, 'reactivacion') !== false) {
+            $asunto = "¿Continuamos con la propuesta de empaque para $empresa? | Power Pack";
+            $cuerpo = "<p>Hola <strong>$nombre</strong>,</p>
+<p>Te escribo brevemente porque sé lo ocupadas que son las semanas operativas en <strong>$empresa</strong>.</p>
+<p>¿Sigue siendo prioridad para ustedes la adquisición de la maquinaria de empaque este trimestre, o prefieres que pausemos el seguimiento por ahora para no saturar tu correo?</p>
+<p>Por cortesía comercial podemos reservar la disponibilidad inmediata hasta fin de mes.</p>
+<p>Cordialmente,<br><strong>Power Pack SAS</strong><br>Tel: +57 300 467 0474</p>";
+        }
+
+        return [
+            'ok' => true,
+            'respuesta_chat' => "He estructurado el correo aplicando la habilidad de '{$skill_nombre}'. El mensaje incluye la propuesta de valor de Power Pack (garantía de 1 año, stock en Bogotá y respaldo técnico) con llamado a la acción claro.",
+            'asunto' => $asunto,
+            'cuerpo_html' => $cuerpo,
+            'mensaje' => strip_tags($cuerpo),
+            'origen' => "Subagente {$subagent['nombre']} (Motor Heurístico Power Pack)"
+        ];
+    } else {
+        // WhatsApp
+        $msg = "Hola *{$nombre}*, un gusto saludarte. Soy Oscar Walteros de *Power Pack SAS* ⚙️\n\nTe escribo porque apoyamos a plantas como *{$empresa}* en optimizar sus líneas de empaque y sellado con maquinaria industrial de alta velocidad.\n\nContamos con equipos para *entrega inmediata en Bogotá*, repuestos locales y *12 meses de garantía directa*.\n\n¿En qué tipo de producto o máquina de empaque están enfocando sus mejoras actualmente para compartirte un video corto en operación? 🤝";
+
+        if (strpos($skill_codigo, 'aviso_cotizacion') !== false) {
+            $msg = "Hola *{$nombre}*, un saludo cordial 🤝\n\nAcabo de enviarte a tu correo la cotización formal con las especificaciones técnicas completas y disponibilidad de entrega inmediata de *Power Pack*.\n\n¿Pudiste recibirlo bien en tu bandeja de entrada o prefieres que te adjunte el documento en PDF también por aquí?";
+        } elseif (strpos($skill_codigo, 'showroom') !== false) {
+            $msg = "¡Hola *{$nombre}*! 👋 Desde *Power Pack* queremos invitarte a nuestro Showroom técnico en Bogotá (Calle 161 # 54 - 25).\n\nPuedes traer muestras de tu producto en *{$empresa}* y realizamos pruebas de sellado y velocidad en vivo sin compromiso. ¿Qué día de esta semana te quedaría cómodo visitarnos? 🏢";
+        } elseif (strpos($skill_codigo, 'reactivacion') !== false) {
+            $msg = "Hola *{$nombre}*, ¿cómo va todo en *{$empresa}*? ☕\n\n¿Pudieron evaluar la propuesta del equipo de empaque o prefieres que lo retomemos el próximo mes? Un saludo.";
+        }
+
+        return [
+            'ok' => true,
+            'respuesta_chat' => "He preparado el mensaje para WhatsApp con formato móvil (*negritas*, viñetas y emojis sobrios) adaptado a la habilidad '{$skill_nombre}'.",
+            'asunto' => '',
+            'cuerpo_html' => nl2br($msg),
+            'mensaje' => $msg,
+            'origen' => "Subagente {$subagent['nombre']} (Motor Heurístico Power Pack)"
+        ];
+    }
+}
+
